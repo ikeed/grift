@@ -67,6 +67,36 @@ public class ProbabilityVector {
         return values[index];
     }
 
+    public int getDimension() {
+        return symbolIndexMap.size();
+    }
+
+    public ImmutableSymbolIndexMap getSymbolIndexMap() {
+        return symbolIndexMap;
+    }
+
+    public double[] getValues() {
+        if (normalizationRequired) {
+            normalize();
+        }
+        return Arrays.copyOf(values, getDimension());
+    }
+
+    @Override
+    public String toString() {
+        if (normalizationRequired) {
+            normalize();
+        }
+        StringBuilder sb = new StringBuilder();
+        for (double d : values) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(d);
+        }
+        return "<" + sb.toString() + ">";
+    }
+
     private void normalize() {
         if (elementSum > 0) {
             for (int i = 0; i < values.length; i++) {

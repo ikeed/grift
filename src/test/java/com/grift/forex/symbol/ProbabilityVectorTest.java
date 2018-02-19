@@ -9,6 +9,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProbabilityVectorTest {
@@ -34,6 +35,8 @@ public class ProbabilityVectorTest {
         for (String symbol : symbolIndexMap.keySet()) {
             assertEquals("should start at zero", 0, probabilityVector.get(symbol), EPSILON);
         }
+        assertEquals("dimension should be set", symbolIndexMap.size(), probabilityVector.getDimension());
+        assertNotNull("symbol map should be initialized", probabilityVector.getSymbolIndexMap());
     }
 
     @Test
