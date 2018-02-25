@@ -1,6 +1,6 @@
 package com.grift.forex.symbol;
 
-import lombok.NonNull;
+
 import org.jetbrains.annotations.NotNull;
 
 import static lombok.Lombok.checkNotNull;
@@ -8,7 +8,7 @@ import static lombok.Lombok.checkNotNull;
 public class ImmutableSymbolIndexMap extends SymbolIndexMap {
     private static final long serialVersionUID = -7832457250175407089L;
 
-    ImmutableSymbolIndexMap(@NotNull @NonNull SymbolIndexMap symbolIndexMap) {
+    ImmutableSymbolIndexMap(@NotNull SymbolIndexMap symbolIndexMap) {
         putAll(checkNotNull(symbolIndexMap, "map"));
     }
 

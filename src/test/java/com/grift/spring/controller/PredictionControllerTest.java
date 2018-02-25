@@ -34,14 +34,12 @@ public class PredictionControllerTest {
     @Autowired
     private List<SymbolPair> symbolPairs;
 
-    private ImmutableSymbolIndexMap symbolMap;
     private ProbabilityVector.Factory vectorFactory;
-    private ArrayList<String> symbols;
 
     @Before
     public void setup() {
-        symbols = Lists.newArrayList("USD", "CAD", "GBP");
-        symbolMap = new SymbolIndexMap().addSymbols(symbols).getImmutableCopy();
+        ArrayList<String> symbols = Lists.newArrayList("USD", "CAD", "GBP");
+        ImmutableSymbolIndexMap symbolMap = new SymbolIndexMap().addSymbols(symbols).getImmutableCopy();
         vectorFactory = new ProbabilityVector.Factory(symbolMap);
     }
 

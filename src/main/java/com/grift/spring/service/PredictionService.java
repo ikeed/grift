@@ -2,7 +2,7 @@ package com.grift.spring.service;
 
 import com.grift.math.ProbabilityVector;
 import com.grift.math.predictor.Predictor;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,8 @@ public class PredictionService {
         this.predictor = predictor;
     }
 
-    public ProbabilityVector makePrediction(@NonNull ProbabilityVector oldVec, @NonNull ProbabilityVector newVec) {
+    @NotNull
+    public ProbabilityVector makePrediction(@NotNull ProbabilityVector oldVec, @NotNull ProbabilityVector newVec) {
         return predictor.getPrediction(oldVec, newVec);
     }
 }

@@ -4,22 +4,21 @@ import java.util.Arrays;
 import com.google.common.annotations.VisibleForTesting;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.math.ProbabilityVector;
-import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class Predictor {
     private static final double EPSILON = 0.000000001d;
+    @NotNull
     private final ProbabilityVector.Factory vectorFactory;
 
-    public Predictor(@NonNull @NotNull SymbolIndexMap symbolIndexMap) {
+    public Predictor(@NotNull SymbolIndexMap symbolIndexMap) {
         vectorFactory = new ProbabilityVector.Factory(symbolIndexMap.getImmutableCopy());
     }
 
     @NotNull
-    @NonNull
-    public ProbabilityVector getPrediction(@NonNull ProbabilityVector oldVec, @NonNull ProbabilityVector newVec) {
+    public ProbabilityVector getPrediction(@NotNull ProbabilityVector oldVec, @NotNull ProbabilityVector newVec) {
         if (oldVec.getDimension() != newVec.getDimension()) {
             throw new IllegalArgumentException("vectors of differing dimension");
         }
@@ -28,7 +27,7 @@ public class Predictor {
         return vectorFactory.create(predictionVector);
     }
 
-    private static void makePrediction(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int max, @NotNull @NonNull double[] prediction) {
+    private static void makePrediction(@NotNull double[] oldVec, @NotNull double[] newVec, int min, int max, @NotNull double[] prediction) {
         int mid = (max + min) / 2;
         int length = max - min + 1;
 
@@ -47,7 +46,7 @@ public class Predictor {
         }
     }
 
-    private static double[] getElementWeights(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int mid, int max) {
+    private static double[] getElementWeights(@NotNull double[] oldVec, @NotNull double[] newVec, int min, int mid, int max) {
         double[] oldWeights = sumHalves(oldVec, min, mid, max);
         double[] newWeights = sumHalves(newVec, min, mid, max);
         return projectR2(oldWeights, newWeights);

@@ -8,13 +8,13 @@ import com.grift.math.ProbabilityVector;
 import com.grift.math.decoupler.DecouplerMatrix;
 import com.grift.math.decoupler.Factory;
 import com.grift.model.Tick;
-import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DecoupleService {
+    @NotNull
     private final DecouplerMatrix matrix;
 
     @Autowired
@@ -26,12 +26,13 @@ public class DecoupleService {
         matrix.put(tick.getSymbolPair(), tick.getVal());
     }
 
+    @NotNull
     public ProbabilityVector decouple() {
         return matrix.decouple();
     }
 
-    @NonNull
-    public Map<SymbolPair, Double> recouple(List<SymbolPair> symbolPairs, @NonNull ProbabilityVector vector) {
+    @NotNull
+    public Map<SymbolPair, Double> recouple(@NotNull List<SymbolPair> symbolPairs, @NotNull ProbabilityVector vector) {
         Map<SymbolPair, Double> map = new HashMap<>();
         for (SymbolPair pair : symbolPairs) {
             map.put(pair, vector.get(pair.getFirst()) / vector.get(pair.getSecond()));

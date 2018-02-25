@@ -6,7 +6,6 @@ import java.util.Map;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
-import lombok.NonNull;
 import org.ejml.data.Complex64F;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.factory.DecompositionFactory;
@@ -21,18 +20,19 @@ import static org.apache.commons.math.util.MathUtils.EPSILON;
  */
 public class DecouplerMatrixColtImpl implements DecouplerMatrix {
 
+    @NotNull
     private final EigenDecomposition<DenseMatrix64F> eigenDecomposition;
 
-    @NonNull
+    @NotNull
     private final SymbolIndexMap symbolIndexMap;
 
-    @NotNull @NonNull
+    @NotNull
     private final ProbabilityVector.Factory vectorFactory;
 
-    @NonNull
+    @NotNull
     private final Map<SymbolPair, Double> mostRecentValue;
 
-    private DecouplerMatrixColtImpl(@NonNull SymbolIndexMap symbolIndexMap) {
+    private DecouplerMatrixColtImpl(@NotNull SymbolIndexMap symbolIndexMap) {
         this.symbolIndexMap = symbolIndexMap;
         this.mostRecentValue = new HashMap<>();
         this.eigenDecomposition = DecompositionFactory.eig(symbolIndexMap.size(), true);
@@ -46,7 +46,7 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
         return vectorFactory.create(normalize(solution.data));
     }
 
-    private double[] normalize(final double[] data) {
+    private double[] normalize(@NotNull final double[] data) {
         return Arrays.stream(data).map(d -> d / Arrays.stream(data).sum()).toArray();
     }
 
@@ -61,13 +61,13 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     }
 
     @Override
-    public void put(@NonNull SymbolPair symbolPair, double val) {
+    public void put(@NotNull SymbolPair symbolPair, double val) {
         mostRecentValue.put(symbolPair, val);
         symbolIndexMap.addSymbolPair(symbolPair);
     }
 
     @Override
-    public double get(@NonNull SymbolPair symbolPair) {
+    public double get(@NotNull SymbolPair symbolPair) {
         if (mostRecentValue.containsKey(symbolPair)) {
             return mostRecentValue.get(symbolPair);
         }
@@ -75,7 +75,6 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     }
 
     @NotNull
-    @NonNull
     private DenseMatrix64F findSolutionVector() {
         final DenseMatrix64F prepared = prepareForDecoupling();
         return getSteadyStateVector(prepared);
@@ -103,7 +102,6 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     }
 
     @NotNull
-    @NonNull
     private DenseMatrix64F prepareForDecoupling() {
         DenseMatrix64F newMat = createStartingMatrix();
         for (int i = 0; i < newMat.numRows; i++) {
@@ -115,13 +113,13 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
         return newMat;
     }
 
-    private void scaleRow(@NotNull @NonNull DenseMatrix64F newMat, int i, double scalar) {
+    private void scaleRow(@NotNull DenseMatrix64F newMat, int i, double scalar) {
         for (int j = 0; j < newMat.numCols; j++) {
             newMat.set(i, j, newMat.get(i, j) * scalar);
         }
     }
 
-    private int getNonZeroCountForRow(@NotNull @NonNull DenseMatrix64F newMat, int i) {
+    private int getNonZeroCountForRow(@NotNull DenseMatrix64F newMat, int i) {
         int nonZeroCount = 0;
         for (int j = 0; j < newMat.numCols; j++) {
             nonZeroCount += Math.abs(newMat.get(i, j)) < EPSILON ? 0 : 1;
@@ -129,7 +127,6 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
         return nonZeroCount;
     }
 
-    @NonNull
     @NotNull
     private DenseMatrix64F createStartingMatrix() {
         DenseMatrix64F mat = getIdentity(rows());
@@ -140,7 +137,6 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
         return mat;
     }
 
-    @NonNull
     @NotNull
     private DenseMatrix64F getIdentity(int n) {
         DenseMatrix64F mat = new DenseMatrix64F(n, n);
@@ -151,7 +147,7 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
         return mat;
     }
 
-    private void setMatrixCellFromPair(@NonNull @NotNull DenseMatrix64F mat, @NonNull @NotNull SymbolPair key, double value) {
+    private void setMatrixCellFromPair(@NotNull DenseMatrix64F mat, @NotNull SymbolPair key, double value) {
         Integer row = symbolIndexMap.get(key.getFirst());
         Integer col = symbolIndexMap.get(key.getSecond());
         mat.set(row, col, value);
@@ -159,13 +155,14 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
 
     public static class ColtFactory implements Factory {
 
-        @NonNull
+        @NotNull
         private final SymbolIndexMap symbolIndexMap;
 
-        public ColtFactory(SymbolIndexMap symbolIndexMap) {
+        public ColtFactory(@NotNull SymbolIndexMap symbolIndexMap) {
             this.symbolIndexMap = symbolIndexMap;
         }
 
+        @NotNull
         @Override
         public DecouplerMatrix make() {
             return new DecouplerMatrixColtImpl(symbolIndexMap);

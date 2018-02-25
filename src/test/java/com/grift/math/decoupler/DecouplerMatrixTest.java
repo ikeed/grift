@@ -8,7 +8,6 @@ import com.grift.GriftApplication;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
-import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,7 +86,7 @@ public class DecouplerMatrixTest {
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    private SymbolPair getRandomPair(@NonNull List<String> allSymbols) {
+    private SymbolPair getRandomPair(@NotNull List<String> allSymbols) {
         int i = randomInt(allSymbols.size());
         int j;
         while ((j = randomInt(allSymbols.size())) == i) {
@@ -95,6 +94,7 @@ public class DecouplerMatrixTest {
         return new SymbolPair(allSymbols.get(i) + allSymbols.get(j));
     }
 
+    @NotNull
     private DecouplerMatrix setInitialConditions(Map<String, Double> trueValues) {
         final DecouplerMatrix mat = factory.make();
         final List<String> currencyList = Lists.newArrayList(trueValues.keySet());

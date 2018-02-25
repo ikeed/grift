@@ -5,7 +5,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
-import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,17 +12,16 @@ import static lombok.Lombok.checkNotNull;
 
 public class ProbabilityVector {
     private static final double EPSILON = 0.00000001;
-    @NonNull
+    @NotNull
     private final ImmutableSymbolIndexMap symbolIndexMap;
     @NotNull
-    @NonNull
     private final double[] values;
 
     private boolean normalizationRequired = false;
     private int nonZeroElements = 0;
     private double elementSum = 0;
 
-    private ProbabilityVector(@NotNull @NonNull SymbolIndexMap symbolIndexMap) {
+    private ProbabilityVector(@NotNull SymbolIndexMap symbolIndexMap) {
         this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
         this.values = new double[symbolIndexMap.keySet().size()];
         this.nonZeroElements = 0;
@@ -32,7 +30,7 @@ public class ProbabilityVector {
         Arrays.fill(values, 0d);
     }
 
-    private ProbabilityVector(@NotNull @NonNull SymbolIndexMap symbolIndexMap, @NotNull @NonNull double[] values) {
+    private ProbabilityVector(@NotNull SymbolIndexMap symbolIndexMap, @NotNull double[] values) {
         this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
         this.values = Arrays.copyOf(values, values.length);
         if (symbolIndexMap.size() != values.length) {
@@ -41,7 +39,7 @@ public class ProbabilityVector {
         setProperties(values);
     }
 
-    public void put(String symbol, double v) {
+    public void put(@NotNull String symbol, double v) {
         assertSymbol(symbol);
         put(symbolIndexMap.get(symbol), v);
     }
@@ -62,7 +60,7 @@ public class ProbabilityVector {
         values[index] = v;
     }
 
-    public double get(@NotNull @NonNull String symbol) {
+    public double get(@NotNull String symbol) {
         assertSymbol(symbol);
         return get(symbolIndexMap.get(symbol));
     }
@@ -79,6 +77,7 @@ public class ProbabilityVector {
         return symbolIndexMap.size();
     }
 
+    @NotNull
     public ImmutableSymbolIndexMap getSymbolIndexMap() {
         return symbolIndexMap;
     }
@@ -138,13 +137,13 @@ public class ProbabilityVector {
         }
     }
 
-    private void assertSymbol(String symbol) {
+    private void assertSymbol(@NotNull String symbol) {
         if (!isLegalSymbol(symbol)) {
             throw new IllegalArgumentException("Unknown symbol: " + symbol);
         }
     }
 
-    private void setProperties(@NonNull @NotNull double[] values) {
+    private void setProperties(@NotNull double[] values) {
         this.nonZeroElements = 0;
         this.elementSum = 0;
         for (double d : values) {
@@ -162,7 +161,7 @@ public class ProbabilityVector {
         return Math.abs(v) < EPSILON;
     }
 
-    private boolean isLegalSymbol(@NonNull @NotNull String symbol) {
+    private boolean isLegalSymbol(@NotNull String symbol) {
         return !Strings.isNullOrEmpty(symbol) && symbolIndexMap.containsKey(symbol);
     }
 
@@ -182,20 +181,17 @@ public class ProbabilityVector {
         }
 
         @NotNull
-        @NonNull
         public ProbabilityVector create() {
             return new ProbabilityVector(immutableSymbolIndexMap);
         }
 
         @NotNull
-        @NonNull
-        public ProbabilityVector create(double... values) {
+        public ProbabilityVector create(@NotNull double... values) {
             return new ProbabilityVector(immutableSymbolIndexMap, values);
         }
 
         @NotNull
-        @NonNull
-        public ProbabilityVector copy(@NotNull @NonNull ProbabilityVector probabilityVector) {
+        public ProbabilityVector copy(@NotNull ProbabilityVector probabilityVector) {
             if (probabilityVector.getSymbolIndexMap().equals(immutableSymbolIndexMap)) {
                 return new ProbabilityVector(immutableSymbolIndexMap, probabilityVector.values);
             }
