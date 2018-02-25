@@ -38,7 +38,8 @@ public class PredictionController {
     @NotNull
     @RequestMapping(method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE}, path = "/prediction")
     public List<Map<SymbolPair, Double>> getPrediction(@NotNull @RequestBody List<ProbabilityVector> vectors) {
-        List<Map<SymbolPair, Double>> list = Lists.newArrayList();
+        final List<Map<SymbolPair, Double>> list = Lists.newArrayList();
+
         for (int i = 0; i < vectors.size() - 1; i++) {
             ProbabilityVector prediction = predictionService.makePrediction(vectors.get(i), vectors.get(i + 1));
             list.add(decoupleService.recouple(symbolList, prediction));

@@ -173,7 +173,7 @@ public class ProbabilityVector {
     public static class Factory {
         private final ImmutableSymbolIndexMap immutableSymbolIndexMap;
 
-        public Factory(String ... symbols) {
+        public Factory(String... symbols) {
             this(new SymbolIndexMap().addSymbols(Lists.newArrayList(symbols)).getImmutableCopy());
         }
 
@@ -197,7 +197,7 @@ public class ProbabilityVector {
         @NonNull
         public ProbabilityVector copy(@NotNull @NonNull ProbabilityVector probabilityVector) {
             if (probabilityVector.getSymbolIndexMap().equals(immutableSymbolIndexMap)) {
-               return new ProbabilityVector(immutableSymbolIndexMap, probabilityVector.values);
+                return new ProbabilityVector(immutableSymbolIndexMap, probabilityVector.values);
             }
             throw new IllegalStateException("Symbol tables don't match");
         }

@@ -8,8 +8,6 @@ import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
-import static lombok.Lombok.checkNotNull;
-
 @Component
 public class Predictor {
     private static final double EPSILON = 0.000000001d;
@@ -26,7 +24,7 @@ public class Predictor {
             throw new IllegalArgumentException("vectors of differing dimension");
         }
         double[] predictionVector = new double[oldVec.getDimension()];
-        makePrediction(checkNotNull(oldVec, "oldVec").getValues(), checkNotNull(newVec, "newVec").getValues(), 0, oldVec.getDimension() - 1, predictionVector);
+        makePrediction(oldVec.getValues(), newVec.getValues(), 0, oldVec.getDimension() - 1, predictionVector);
         return vectorFactory.create(predictionVector);
     }
 
@@ -39,15 +37,21 @@ public class Predictor {
             return;
         }
 
-        double[] oldWeights = sumHalves(oldVec, min, mid, max);
-        double[] newWeights = sumHalves(newVec, min, mid, max);
-        double[] projectionR2 = projectR2(oldWeights, newWeights);
         makePrediction(oldVec, newVec, min, mid, prediction);
         makePrediction(oldVec, newVec, mid + 1, max, prediction);
+
+        double[] weights = getElementWeights(oldVec, newVec, min, max, mid);
+
         for (int i = min; i <= max; i++) {
-            prediction[i] *= projectionR2[i <= min ? 0 : 1];
+            prediction[i] *= weights[i <= mid ? 0 : 1];
         }
         normalizeSection(prediction, min, max);
+    }
+
+    private static double[] getElementWeights(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int max, int mid) {
+        double[] oldWeights = sumHalves(oldVec, min, mid, max);
+        double[] newWeights = sumHalves(newVec, min, mid, max);
+        return projectR2(oldWeights, newWeights);
     }
 
     private static void normalizeSection(double[] arr, int min, int max) {
