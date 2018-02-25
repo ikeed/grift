@@ -40,28 +40,17 @@ public class Predictor {
         makePrediction(oldVec, newVec, min, mid, prediction);
         makePrediction(oldVec, newVec, mid + 1, max, prediction);
 
-        double[] weights = getElementWeights(oldVec, newVec, min, max, mid);
+        double[] weights = getElementWeights(oldVec, newVec, min, mid, max);
 
         for (int i = min; i <= max; i++) {
             prediction[i] *= weights[i <= mid ? 0 : 1];
         }
-        normalizeSection(prediction, min, max);
     }
 
-    private static double[] getElementWeights(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int max, int mid) {
+    private static double[] getElementWeights(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int mid, int max) {
         double[] oldWeights = sumHalves(oldVec, min, mid, max);
         double[] newWeights = sumHalves(newVec, min, mid, max);
         return projectR2(oldWeights, newWeights);
-    }
-
-    private static void normalizeSection(double[] arr, int min, int max) {
-        double sum = 0;
-        for (int i = min; i <= max; i++) {
-            sum += arr[i];
-        }
-        for (int i = min; i <= max; i++) {
-            arr[i] /= sum;
-        }
     }
 
     @NotNull
@@ -70,7 +59,7 @@ public class Predictor {
         for (int i = min; i <= max; i++) {
             weights[i <= mid ? 0 : 1] += arr[i];
         }
-        return weights;
+        return normalize(weights);
     }
 
     /* project:  Solves for the steady-state vector (eigenvector with eigenvalue: 1) for a 2x2 right-stochastic system.

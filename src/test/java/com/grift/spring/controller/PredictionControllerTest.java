@@ -74,7 +74,7 @@ public class PredictionControllerTest {
                 vectorFactory.create(0.2, 0.3, 0.5),
                 vectorFactory.create(0.19, 0.31, 0.5)
         );
-        ProbabilityVector expectedVector = vectorFactory.create(0.08648915583572758, 0.4135108441642724, 0.5);
+        ProbabilityVector expectedVector = vectorFactory.create(0.1779809145894581, 0.32201908541054186, 0.5);
         Map<SymbolPair, Double> expectedValues = decouplerService.recouple(symbolPairs, expectedVector);
 
         List<Map<SymbolPair, Double>> result = predictionController.getPrediction(vectors);
