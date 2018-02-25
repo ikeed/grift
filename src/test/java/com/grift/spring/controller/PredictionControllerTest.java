@@ -10,6 +10,7 @@ import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
 import com.grift.spring.service.DecoupleService;
 import org.assertj.core.util.Lists;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +57,7 @@ public class PredictionControllerTest {
         ProbabilityVector vector = vectorFactory.create(0.2, 0.3, 0.5);
         vectors.add(vector);
         vectors.add(vectorFactory.copy(vector));
-        Map<SymbolPair, Double> expectedValues = decouplerService.recouple(symbolPairs, vector);
+        Map<SymbolPair, Double> expectedValues = getRecoupledVector(vector);
 
         List<Map<SymbolPair, Double>> result = predictionController.getPrediction(vectors);
 
@@ -66,6 +67,11 @@ public class PredictionControllerTest {
         mapResult.forEach((key, value) -> assertEquals("Wrong value", expectedValues.get(key), value, EPSILON));
     }
 
+    @NotNull
+    private Map<SymbolPair, Double> getRecoupledVector(ProbabilityVector vector) {
+        return decouplerService.recouple(symbolPairs, vector);
+    }
+
     @Test
     public void getPredictionNonTrivial() {
         List<ProbabilityVector> vectors = Lists.newArrayList(
@@ -73,7 +79,7 @@ public class PredictionControllerTest {
                 vectorFactory.create(0.19, 0.31, 0.5)
         );
         ProbabilityVector expectedVector = vectorFactory.create(0.1779809145894581, 0.32201908541054186, 0.5);
-        Map<SymbolPair, Double> expectedValues = decouplerService.recouple(symbolPairs, expectedVector);
+        Map<SymbolPair, Double> expectedValues = getRecoupledVector(expectedVector);
 
         List<Map<SymbolPair, Double>> result = predictionController.getPrediction(vectors);
 

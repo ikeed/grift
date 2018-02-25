@@ -2,7 +2,8 @@ package com.grift.spring.controller;
 
 import java.util.List;
 import java.util.Map;
-import com.google.common.collect.Lists;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
 import com.grift.spring.service.DecoupleService;
@@ -38,12 +39,6 @@ public class PredictionController {
     @NotNull
     @RequestMapping(method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE}, path = "/prediction")
     public List<Map<SymbolPair, Double>> getPrediction(@NotNull @RequestBody List<ProbabilityVector> vectors) {
-        final List<Map<SymbolPair, Double>> list = Lists.newArrayList();
-
-        for (int i = 0; i < vectors.size() - 1; i++) {
-            ProbabilityVector prediction = predictionService.makePrediction(vectors.get(i), vectors.get(i + 1));
-            list.add(decoupleService.recouple(symbolList, prediction));
-        }
-        return list;
+        return IntStream.range(0, vectors.size() - 1).mapToObj(i -> predictionService.makePrediction(vectors.get(i), vectors.get(i + 1))).map(prediction -> decoupleService.recouple(symbolList, prediction)).collect(Collectors.toList());
     }
 }

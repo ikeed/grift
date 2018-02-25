@@ -22,19 +22,13 @@ public class SymbolPair {
         this(checkNotNull(pair, "pair").substring(0, 3), pair.substring(3));
     }
 
-    @NotNull
-    @Override
-    public String toString() {
-        return first + second;
-    }
-
     /**
      * Creates a new pair
      *
      * @param first  The first for this pair
      * @param second The second to use for this pair
      */
-    private SymbolPair(@NotNull String first, @NotNull String second) {
+    public SymbolPair(@NotNull String first, @NotNull String second) {
         if (checkNotNull(first, "first").length() != 3 || checkNotNull(second, "second").length() != 3) {
             throw new IllegalArgumentException("must be two symbols of length 3.  Them's the rules.");
         } else if (isMalformedSymbol(first) || isMalformedSymbol(second)) {
@@ -45,8 +39,14 @@ public class SymbolPair {
         this.second = second.toUpperCase();
     }
 
-    private boolean isMalformedSymbol(@NotNull String first) {
+    private static boolean isMalformedSymbol(@NotNull String first) {
         return !first.matches("[a-zA-Z]{3}");
+    }
+
+    @NotNull
+    @Override
+    public String toString() {
+        return first + second;
     }
 
     @Override

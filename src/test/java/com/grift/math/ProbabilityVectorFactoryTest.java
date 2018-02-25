@@ -1,8 +1,6 @@
 package com.grift.math;
 
-import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
-import com.grift.forex.symbol.SymbolIndexMap;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -15,7 +13,7 @@ public class ProbabilityVectorFactoryTest {
 
     @Test
     public void testConstructWithMap() {
-        ImmutableSymbolIndexMap map = new SymbolIndexMap().addSymbols(Lists.newArrayList("CAD", "USD", "GBP")).getImmutableCopy();
+        ImmutableSymbolIndexMap map = new ImmutableSymbolIndexMap("CAD", "USD", "GBP");
         ProbabilityVector.Factory factory = new ProbabilityVector.Factory(map);
         assertEquals(3, factory.create().getDimension());
     }
@@ -31,7 +29,7 @@ public class ProbabilityVectorFactoryTest {
         ProbabilityVector.Factory factory = new ProbabilityVector.Factory("CAD", "USD", "GBP");
         ProbabilityVector probabilityVector = factory.create(0.2, 0.3, 0.5);
         assertEquals(3, probabilityVector.getDimension());
-        assertEquals("<0.2, 0.3, 0.5>", probabilityVector.toString());
+        assertEquals("[0.2, 0.3, 0.5]", probabilityVector.toString());
     }
 
     @Test(expected = IllegalStateException.class)

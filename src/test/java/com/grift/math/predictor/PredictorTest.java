@@ -24,17 +24,17 @@ public class PredictorTest {
 
     @Before
     public void setup() {
-        immutableSymbolIndexMap = new SymbolIndexMap().addSymbols(Lists.newArrayList("CAD", "USD", "GBP")).getImmutableCopy();
+        immutableSymbolIndexMap = new ImmutableSymbolIndexMap("CAD", "USD", "GBP");
         predictor = new Predictor(immutableSymbolIndexMap);
         vectorFactory = new ProbabilityVector.Factory(immutableSymbolIndexMap);
     }
 
     @Test
     public void getPrediction() {
-        ProbabilityVector v1 = vectorFactory.create(10, 20, 30);
-        ProbabilityVector v2 = vectorFactory.create(10, 20, 31);
+        ProbabilityVector oldVector = vectorFactory.create(10, 20, 30);
+        ProbabilityVector newVector = vectorFactory.create(10, 20, 31);
 
-        ProbabilityVector result = predictor.getPrediction(v1, v2);
+        ProbabilityVector result = predictor.getPrediction(oldVector, newVector);
         assertNotNull(result);
     }
 

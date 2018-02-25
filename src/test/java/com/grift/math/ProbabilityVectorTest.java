@@ -1,14 +1,17 @@
-package com.grift.forex.symbol;
+package com.grift.math;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
-import com.grift.math.ProbabilityVector;
+import com.grift.forex.symbol.SymbolIndexMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.apache.commons.math.util.MathUtils.EPSILON;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -18,7 +21,6 @@ import static org.junit.Assert.assertNotNull;
 public class ProbabilityVectorTest {
 
     private static final ArrayList<String> SYMBOLS = Lists.newArrayList("CAD", "USD", "GBP");
-    private final double EPSILON = 0.000001;
     private SymbolIndexMap symbolIndexMap;
     private ProbabilityVector.Factory vectorFactory;
 
@@ -33,12 +35,8 @@ public class ProbabilityVectorTest {
     @Test
     public void oneArgConstructor() {
         ProbabilityVector probabilityVector = vectorFactory.create();
-        for (int i = 0; i < symbolIndexMap.size(); i++) {
-            assertEquals("should start at zero", 0, probabilityVector.get(i), EPSILON);
-        }
-        for (String symbol : symbolIndexMap.keySet()) {
-            assertEquals("should start at zero", 0, probabilityVector.get(symbol), EPSILON);
-        }
+        IntStream.range(0, symbolIndexMap.size()).forEach(i -> assertEquals("should start at zero", 0, probabilityVector.get(i), EPSILON));
+        symbolIndexMap.keySet().forEach(symbol -> assertEquals("should start at zero", 0, probabilityVector.get(symbol), EPSILON));
         assertEquals("dimension should be set", symbolIndexMap.size(), probabilityVector.getDimension());
         assertNotNull("symbol map should be initialized", probabilityVector.getSymbolIndexMap());
     }
@@ -51,12 +49,8 @@ public class ProbabilityVectorTest {
                 /*GBP*/ 30
         };
         ProbabilityVector probabilityVector = vectorFactory.create( expected);
-        for (int i = 0; i < SYMBOLS.size(); i++) {
-            assertEquals("value mismatch", expected[i] / 60, probabilityVector.get(i), EPSILON);
-        }
-        for (String symbol : SYMBOLS) {
-            assertEquals("value mismatch", expected[symbolIndexMap.get(symbol)] / 60, probabilityVector.get(symbol), EPSILON);
-        }
+        IntStream.range(0, SYMBOLS.size()).forEach(i -> assertEquals("value mismatch", expected[i] / 60, probabilityVector.get(i), EPSILON));
+        SYMBOLS.forEach(symbol -> assertEquals("value mismatch", expected[symbolIndexMap.get(symbol)] / 60, probabilityVector.get(symbol), EPSILON));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -175,7 +169,7 @@ public class ProbabilityVectorTest {
     @Test
     public void toStringNormalizes() {
         ProbabilityVector probabilityVector = vectorFactory.create(1, 1, 2);
-        assertEquals("toString should normalize", "<0.25, 0.25, 0.5>", probabilityVector.toString());
+        assertEquals("toString should normalize", "[0.25, 0.25, 0.5]", probabilityVector.toString());
     }
 
     @Test
@@ -191,5 +185,12 @@ public class ProbabilityVectorTest {
         ProbabilityVector probabilityVector = vectorFactory.create(1, 1, 2);
         ProbabilityVector probabilityVector2 = vectorFactory.create(1, 2, 2);
         assertNotEquals(probabilityVector.hashCode(), probabilityVector2.hashCode());
+    }
+
+    @Test
+    public void testNormalize() {
+        double[] arr = new double[] { 10, 20, 70};
+        double[] result = ProbabilityVector.normalize(arr);
+        assertEquals("[0.1, 0.2, 0.7]", Arrays.toString(result));
     }
 }

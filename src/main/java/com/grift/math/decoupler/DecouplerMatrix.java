@@ -14,5 +14,5 @@ public interface DecouplerMatrix {
 
     void put(@NotNull SymbolPair symbolPair, double val);
 
-    double get(SymbolPair symbolPair);
+    double get(@NotNull SymbolPair symbolPair);
 }

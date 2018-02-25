@@ -1,17 +1,18 @@
 package com.grift.math;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static lombok.Lombok.checkNotNull;
+import static org.apache.commons.math.util.MathUtils.EPSILON;
 
 public class ProbabilityVector {
-    private static final double EPSILON = 0.00000001;
     @NotNull
     private final ImmutableSymbolIndexMap symbolIndexMap;
     @NotNull
@@ -37,6 +38,11 @@ public class ProbabilityVector {
             throw new IllegalArgumentException(String.format("Wrong number of values for symbol table.  Expected: %d, Actual: %d", symbolIndexMap.size(), values.length));
         }
         setProperties(values);
+    }
+
+    @NotNull
+    public static double[] normalize(@NotNull final double[] data) {
+        return Arrays.stream(checkNotNull(data, "data")).map(d -> d / Arrays.stream(data).sum()).toArray();
     }
 
     public void put(@NotNull String symbol, double v) {
@@ -78,7 +84,8 @@ public class ProbabilityVector {
     }
 
     @NotNull
-    public ImmutableSymbolIndexMap getSymbolIndexMap() {
+    @VisibleForTesting
+    ImmutableSymbolIndexMap getSymbolIndexMap() {
         return symbolIndexMap;
     }
 
@@ -96,14 +103,7 @@ public class ProbabilityVector {
         if (normalizationRequired) {
             normalize();
         }
-        StringBuilder sb = new StringBuilder();
-        for (double d : values) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(d);
-        }
-        return "<" + sb.toString() + ">";
+        return Arrays.toString(values);
     }
 
     @Override
@@ -123,9 +123,7 @@ public class ProbabilityVector {
 
     private void normalize() {
         if (elementSum != 0) {
-            for (int i = 0; i < values.length; i++) {
-                values[i] /= elementSum;
-            }
+            IntStream.range(0, values.length).forEach(i -> values[i] = values[i] / elementSum);
         }
         elementSum = 1;
         normalizationRequired = false;
@@ -146,10 +144,10 @@ public class ProbabilityVector {
     private void setProperties(@NotNull double[] values) {
         this.nonZeroElements = 0;
         this.elementSum = 0;
-        for (double d : values) {
+        Arrays.stream(values).forEach(d -> {
             this.nonZeroElements += (d == 0 ? 0 : 1);
             this.elementSum += d;
-        }
+        });
         this.normalizationRequired = calculateIsNormalizationRequired();
     }
 
@@ -173,7 +171,7 @@ public class ProbabilityVector {
         private final ImmutableSymbolIndexMap immutableSymbolIndexMap;
 
         public Factory(String... symbols) {
-            this(new SymbolIndexMap().addSymbols(Lists.newArrayList(symbols)).getImmutableCopy());
+            this(new ImmutableSymbolIndexMap(symbols));
         }
 
         public Factory(ImmutableSymbolIndexMap immutableSymbolIndexMap) {

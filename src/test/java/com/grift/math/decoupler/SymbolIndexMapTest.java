@@ -1,9 +1,7 @@
 package com.grift.math.decoupler;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
@@ -61,24 +59,22 @@ public class SymbolIndexMapTest {
     @Test
     public void size() {
         List<String> symbols = Lists.newArrayList("CAD", "AUD", "EUR", "NZD", "USD");
-        for (int i = 0; i < symbols.size() - 1; i++) {
+        IntStream.range(0, symbols.size() - 1).forEach(i -> {
             assertEquals("size should match", i, symbolIndexMap.size());
             symbolIndexMap.addSymbol(symbols.get(i));
-        }
+        });
     }
 
     @Test
     public void getSymbols() {
         List<String> symbols = Lists.newArrayList("CAD", "AUD", "EUR", "NZD", "USD");
-        for (int i = 0; i < symbols.size() - 1; i++) {
-            symbolIndexMap.addSymbol(symbols.get(i));
-        }
+        IntStream.range(0, symbols.size() - 1).forEach(i -> symbolIndexMap.addSymbol(symbols.get(i)));
         List<String> arr = symbolIndexMap.getAllSymbols();
-        for (int i = 0; i < arr.size() - 1; i++) {
+        IntStream.range(0, arr.size() - 1).forEach(i -> {
             Integer[] indices = symbolIndexMap.getIndicesForSymbolPair(new SymbolPair(arr.get(i) + arr.get(i + 1)));
             assertEquals(i, (int) indices[0]);
             assertEquals(i + 1, (int) indices[1]);
-        }
+        });
     }
 
     @Test
@@ -88,18 +84,5 @@ public class SymbolIndexMapTest {
         List<String> actual = symbolIndexMap.getAllSymbols();
         assertEquals("size should match", symbols.size(), actual.size());
         assertArrayEquals("Lists don't match", symbols.toArray(), actual.toArray());
-    }
-
-    @Test
-    public void getAlPairs() {
-        ArrayList<String> pairList = Lists.newArrayList("CADUSD", "USDGBB", "EURCAD");
-        for (String pair : pairList) {
-            symbolIndexMap.addSymbolPair(new SymbolPair(pair));
-        }
-        Set<String> symbolPairs = symbolIndexMap.getAllPairs().stream().map(SymbolPair::toString).collect(Collectors.toSet());
-        assertEquals("wrong size", pairList.size(), symbolPairs.size());
-        for (String pair : pairList) {
-            assertTrue("missing pair: " + pair, symbolPairs.contains(pair));
-        }
     }
 }
