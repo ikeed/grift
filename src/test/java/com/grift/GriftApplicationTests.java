@@ -1,6 +1,6 @@
 package com.grift;
 
-import com.grift.forex.symbol.ImmutableSymbolIndexMap;
+import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.math.decoupler.Factory;
 import com.grift.spring.controller.DecoupleController;
 import com.grift.spring.service.DecoupleService;
@@ -23,7 +23,7 @@ public class GriftApplicationTests {
     Factory decouplerFactory;
 
     @Autowired
-    ImmutableSymbolIndexMap symbolIndexMap;
+    SymbolIndexMap symbolIndexMap;
 
     @Autowired
     DecoupleController decoupleController;
@@ -38,7 +38,7 @@ public class GriftApplicationTests {
 
     @Test
     public void startUp() {
-        GriftApplication.main(new String[] {});
+        GriftApplication.main(new String[]{});
     }
 
 }

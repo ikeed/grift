@@ -1,32 +1,53 @@
 package com.grift.forex.symbol;
 
-import lombok.NonNull;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 
+@EqualsAndHashCode(callSuper = true)
 public class SymbolIndexMap extends HashMap<String, Integer> {
 
+    private static final long serialVersionUID = -6447422866018999830L;
+    private final transient Set<SymbolPair> allPairs;
+
+    public SymbolIndexMap() {
+        allPairs = new HashSet<>();
+    }
+
     @NotNull
-    public SymbolIndexMap addSymbols(@NotNull @NonNull List<String> symbols) {
-        for (String symbol : symbols) {
-            addSymbol(symbol);
+    @VisibleForTesting
+    public SymbolIndexMap addSymbols(@NonNull List<String> symbols) {
+        for (String sym : symbols) {
+            addSymbol(sym);
         }
         return this;
     }
 
-    final public ImmutableSymbolIndexMap getImmutablecopy() {
+    public SymbolIndexMap addSymbolPairs(@NonNull List<SymbolPair> pairs) {
+        for (SymbolPair pair : pairs) {
+            addSymbolPair(pair);
+        }
+        return this;
+    }
+
+    public final ImmutableSymbolIndexMap getImmutableCopy() {
         return new ImmutableSymbolIndexMap(this);
     }
 
     @NonNull
-    public Integer[] addSymbolPair(@NotNull @NonNull SymbolPair symbolPair) {
+    public Integer[] addSymbolPair(@NonNull SymbolPair symbolPair) {
         addSymbol(symbolPair.getFirst());
         addSymbol(symbolPair.getSecond());
-        return getIndecesForSymbolPair(symbolPair);
+        allPairs.add(symbolPair);
+        return getIndicesForSymbolPair(symbolPair);
     }
 
     public boolean addSymbol(String symbol) {
@@ -45,7 +66,7 @@ public class SymbolIndexMap extends HashMap<String, Integer> {
 
     @NotNull
     @NonNull
-    public Integer[] getIndecesForSymbolPair(@NotNull SymbolPair symbolPair) {
+    public Integer[] getIndicesForSymbolPair(@NotNull SymbolPair symbolPair) {
         return new Integer[]{
                 getOrCreateSymbolIndex(symbolPair.getFirst()),
                 getOrCreateSymbolIndex(symbolPair.getSecond())
@@ -59,7 +80,7 @@ public class SymbolIndexMap extends HashMap<String, Integer> {
         return arr;
     }
 
-    public int size() {
-        return keySet().size();
+    public Set<SymbolPair> getAllPairs() {
+        return ImmutableSet.copyOf(allPairs);
     }
 }

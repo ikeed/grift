@@ -1,13 +1,16 @@
 package com.grift.math.decoupler;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import com.google.common.collect.Lists;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
-import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -15,7 +18,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(SpringRunner.class)
 public class SymbolIndexMapTest {
     private SymbolIndexMap symbolIndexMap;
 
@@ -38,9 +41,9 @@ public class SymbolIndexMapTest {
     @Test
     public void addSymbolPair() {
         symbolIndexMap.addSymbolPair(new SymbolPair("USDEUR")); //[0,1]
-        Integer[] indeces = symbolIndexMap.addSymbolPair(new SymbolPair("EURCAD")); //[1,2]
-        assertEquals("indeces[0] wrong", 1, (int) indeces[0]);
-        assertEquals("indeces[1] wrong", 2, (int) indeces[1]);
+        Integer[] indices = symbolIndexMap.addSymbolPair(new SymbolPair("EURCAD")); //[1,2]
+        assertEquals("indices[0] wrong", 1, (int) indices[0]);
+        assertEquals("indices[1] wrong", 2, (int) indices[1]);
     }
 
     @Test
@@ -48,11 +51,11 @@ public class SymbolIndexMapTest {
         assertTrue("Should add successfully", symbolIndexMap.addSymbol("CAD")); //0
         assertTrue("Should add successfully", symbolIndexMap.addSymbol("USD")); //1
         assertTrue("Should add successfully", symbolIndexMap.addSymbol("EUR")); //2
-        Integer[] indeces = symbolIndexMap.getIndecesForSymbolPair(new SymbolPair("EURUSD"));
-        assertNotNull("not nul", indeces);
-        assertEquals("returned array should have two elements", 2, indeces.length);
-        assertEquals("indeces[0] wrong", 2, (int) indeces[0]);
-        assertEquals("indeces[1] wrong", 1, (int) indeces[1]);
+        Integer[] indices = symbolIndexMap.getIndicesForSymbolPair(new SymbolPair("EURUSD"));
+        assertNotNull("not nul", indices);
+        assertEquals("returned array should have two elements", 2, indices.length);
+        assertEquals("indices[0] wrong", 2, (int) indices[0]);
+        assertEquals("indices[1] wrong", 1, (int) indices[1]);
     }
 
     @Test
@@ -72,9 +75,9 @@ public class SymbolIndexMapTest {
         }
         List<String> arr = symbolIndexMap.getAllSymbols();
         for (int i = 0; i < arr.size() - 1; i++) {
-            Integer[] indeces = symbolIndexMap.getIndecesForSymbolPair(new SymbolPair(arr.get(i) + arr.get(i + 1)));
-            assertEquals(i, (int) indeces[0]);
-            assertEquals(i + 1, (int) indeces[1]);
+            Integer[] indices = symbolIndexMap.getIndicesForSymbolPair(new SymbolPair(arr.get(i) + arr.get(i + 1)));
+            assertEquals(i, (int) indices[0]);
+            assertEquals(i + 1, (int) indices[1]);
         }
     }
 
@@ -85,5 +88,18 @@ public class SymbolIndexMapTest {
         List<String> actual = symbolIndexMap.getAllSymbols();
         assertEquals("size should match", symbols.size(), actual.size());
         assertArrayEquals("Lists don't match", symbols.toArray(), actual.toArray());
+    }
+
+    @Test
+    public void getAlPairs() {
+        ArrayList<String> pairList = Lists.newArrayList("CADUSD", "USDGBB", "EURCAD");
+        for (String pair : pairList) {
+            symbolIndexMap.addSymbolPair(new SymbolPair(pair));
+        }
+        Set<String> symbolPairs = symbolIndexMap.getAllPairs().stream().map(SymbolPair::toString).collect(Collectors.toSet());
+        assertEquals("wrong size", pairList.size(), symbolPairs.size());
+        for (String pair : pairList) {
+            assertTrue("missing pair: " + pair, symbolPairs.contains(pair));
+        }
     }
 }

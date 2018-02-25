@@ -17,11 +17,15 @@ import org.springframework.web.bind.annotation.RestController;
 @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class DecoupleController {
 
+    private final DecoupleService decoupleService;
+
     @Autowired
-    DecoupleService decoupleService;
+    public DecoupleController(DecoupleService decoupleService) {
+        this.decoupleService = decoupleService;
+    }
 
     @NotNull
-    @RequestMapping(method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE})
+    @RequestMapping(method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_VALUE}, path = "/tick")
     public Tick insertOrUpdateTick(@NotNull @RequestBody Tick tick) {
         decoupleService.insertTick(tick);
         return tick;

@@ -1,7 +1,10 @@
 package com.grift.math;
 
 import java.util.Arrays;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
+import com.grift.forex.symbol.SymbolIndexMap;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,8 +23,8 @@ public class ProbabilityVector {
     private int nonZeroElements = 0;
     private double elementSum = 0;
 
-    public ProbabilityVector(@NotNull @NonNull ImmutableSymbolIndexMap symbolIndexMap) {
-        this.symbolIndexMap = checkNotNull(symbolIndexMap, "map");
+    private ProbabilityVector(@NotNull @NonNull SymbolIndexMap symbolIndexMap) {
+        this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
         this.values = new double[symbolIndexMap.keySet().size()];
         this.nonZeroElements = 0;
         this.normalizationRequired = false;
@@ -29,23 +32,21 @@ public class ProbabilityVector {
         Arrays.fill(values, 0d);
     }
 
-    public ProbabilityVector(@NotNull @NonNull ImmutableSymbolIndexMap symbolIndexMap, @NotNull @NonNull double[] vals) {
-        this.symbolIndexMap = checkNotNull(symbolIndexMap, "map");
-        this.values = Arrays.copyOf(vals, vals.length);
-        if (symbolIndexMap.size() != vals.length) {
-            throw new IllegalArgumentException("Wrong number of values for symbol table");
+    private ProbabilityVector(@NotNull @NonNull SymbolIndexMap symbolIndexMap, @NotNull @NonNull double[] values) {
+        this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
+        this.values = Arrays.copyOf(values, values.length);
+        if (symbolIndexMap.size() != values.length) {
+            throw new IllegalArgumentException(String.format("Wrong number of values for symbol table.  Expected: %d, Actual: %d", symbolIndexMap.size(), values.length));
         }
-        setProperties(vals);
+        setProperties(values);
     }
 
-    @NotNull
-    public ProbabilityVector put(String symb, double v) {
-        assertSymbol(symb);
-        return put(symbolIndexMap.get(symb), v);
+    public void put(String symbol, double v) {
+        assertSymbol(symbol);
+        put(symbolIndexMap.get(symbol), v);
     }
 
-    @NotNull
-    public ProbabilityVector put(int index, double v) {
+    public void put(int index, double v) {
         assertIndex(index);
         if (v < 0) {
             throw new IllegalArgumentException("No negative values allowed");
@@ -59,12 +60,11 @@ public class ProbabilityVector {
         normalizationRequired = normalizationRequired || !isZero(delta);
         elementSum += delta;
         values[index] = v;
-        return this;
     }
 
-    public double get(String symb) {
-        assertSymbol(symb);
-        return get(symbolIndexMap.get(symb));
+    public double get(@NotNull @NonNull String symbol) {
+        assertSymbol(symbol);
+        return get(symbolIndexMap.get(symbol));
     }
 
     public double get(int index) {
@@ -108,6 +108,11 @@ public class ProbabilityVector {
     }
 
     @Override
+    public int hashCode() {
+        return Arrays.toString(values).hashCode();
+    }
+
+    @Override
     public boolean equals(@Nullable Object obj) {
         ProbabilityVector that;
         if (obj == null || !(obj instanceof ProbabilityVector)) {
@@ -118,7 +123,7 @@ public class ProbabilityVector {
     }
 
     private void normalize() {
-        if (elementSum > 0) {
+        if (elementSum != 0) {
             for (int i = 0; i < values.length; i++) {
                 values[i] /= elementSum;
             }
@@ -133,16 +138,16 @@ public class ProbabilityVector {
         }
     }
 
-    private void assertSymbol(String symb) {
-        if (!isLegalSymbol(symb)) {
-            throw new IllegalArgumentException("Unknown symbol: " + symb);
+    private void assertSymbol(String symbol) {
+        if (!isLegalSymbol(symbol)) {
+            throw new IllegalArgumentException("Unknown symbol: " + symbol);
         }
     }
 
-    private void setProperties(double[] vals) {
+    private void setProperties(@NonNull @NotNull double[] values) {
         this.nonZeroElements = 0;
         this.elementSum = 0;
-        for (double d : vals) {
+        for (double d : values) {
             this.nonZeroElements += (d == 0 ? 0 : 1);
             this.elementSum += d;
         }
@@ -157,11 +162,44 @@ public class ProbabilityVector {
         return Math.abs(v) < EPSILON;
     }
 
-    private boolean isLegalSymbol(String symb) {
-        return symbolIndexMap.containsKey(symb);
+    private boolean isLegalSymbol(@NonNull @NotNull String symbol) {
+        return !Strings.isNullOrEmpty(symbol) && symbolIndexMap.containsKey(symbol);
     }
 
     private boolean isLegalIndex(int index) {
         return symbolIndexMap.containsValue(index) && index >= 0 && index < values.length;
+    }
+
+    public static class Factory {
+        private final ImmutableSymbolIndexMap immutableSymbolIndexMap;
+
+        public Factory(String ... symbols) {
+            this(new SymbolIndexMap().addSymbols(Lists.newArrayList(symbols)).getImmutableCopy());
+        }
+
+        public Factory(ImmutableSymbolIndexMap immutableSymbolIndexMap) {
+            this.immutableSymbolIndexMap = immutableSymbolIndexMap;
+        }
+
+        @NotNull
+        @NonNull
+        public ProbabilityVector create() {
+            return new ProbabilityVector(immutableSymbolIndexMap);
+        }
+
+        @NotNull
+        @NonNull
+        public ProbabilityVector create(double... values) {
+            return new ProbabilityVector(immutableSymbolIndexMap, values);
+        }
+
+        @NotNull
+        @NonNull
+        public ProbabilityVector copy(@NotNull @NonNull ProbabilityVector probabilityVector) {
+            if (probabilityVector.getSymbolIndexMap().equals(immutableSymbolIndexMap)) {
+               return new ProbabilityVector(immutableSymbolIndexMap, probabilityVector.values);
+            }
+            throw new IllegalStateException("Symbol tables don't match");
+        }
     }
 }

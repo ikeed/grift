@@ -1,7 +1,7 @@
 package com.grift.math.decoupler;
 
-import com.grift.math.ProbabilityVector;
 import com.grift.forex.symbol.SymbolPair;
+import com.grift.math.ProbabilityVector;
 import lombok.NonNull;
 
 public interface DecouplerMatrix {

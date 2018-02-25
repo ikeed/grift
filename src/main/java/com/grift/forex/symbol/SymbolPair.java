@@ -39,7 +39,7 @@ public class SymbolPair {
     private SymbolPair(@NotNull @NonNull String first, @NotNull @NonNull String second) {
         if (checkNotNull(first, "first").length() != 3 || checkNotNull(second, "second").length() != 3) {
             throw new IllegalArgumentException("must be two symbols of length 3.  Them's the rules.");
-        } else if (!isThreeLetters(first) || !isThreeLetters(second)) {
+        } else if (isMalformedSymbol(first) || isMalformedSymbol(second)) {
             throw new IllegalArgumentException("Each symbol must be 3 letters e.g. \"USD\"");
         }
 
@@ -47,7 +47,23 @@ public class SymbolPair {
         this.second = second.toUpperCase();
     }
 
-    private boolean isThreeLetters(@NonNull String first) {
-        return first.matches("[a-zA-Z]{3}");
+    private boolean isMalformedSymbol(@NonNull String first) {
+        return !first.matches("[a-zA-Z]{3}");
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof  String || obj instanceof SymbolPair)) {
+            return false;
+        }
+
+        //works for String or SymbolPair
+        //or really any object with toString defined the same as ours.
+        return obj.toString().equals(toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
     }
 }

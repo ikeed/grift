@@ -1,53 +1,56 @@
 package com.grift.math.predictor;
 
+import java.util.Arrays;
 import com.google.common.annotations.VisibleForTesting;
+import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.math.ProbabilityVector;
-import lombok.Getter;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Arrays;
+import org.springframework.stereotype.Component;
 
 import static lombok.Lombok.checkNotNull;
 
-class Predictor {
+@Component
+public class Predictor {
     private static final double EPSILON = 0.000000001d;
-    @NotNull
-    @NonNull
-    @Getter
-    private final ProbabilityVector prediction;
+    private final ProbabilityVector.Factory vectorFactory;
 
-    Predictor(@NonNull ProbabilityVector v1, @NonNull ProbabilityVector v2) {
-        if (v1.getDimension() != v2.getDimension()) {
-            throw new IllegalArgumentException("vectors of differing dimension");
-        }
-        double[] predVector = new double[v1.getDimension()];
-        makePrediction(checkNotNull(v1, "v1").getValues(), checkNotNull(v2, "v2").getValues(), 0, v1.getDimension() - 1, predVector);
-        this.prediction = new ProbabilityVector(v1.getSymbolIndexMap(), predVector);
+    public Predictor(@NonNull @NotNull SymbolIndexMap symbolIndexMap) {
+        vectorFactory = new ProbabilityVector.Factory(symbolIndexMap.getImmutableCopy());
     }
 
     @NotNull
-    private static double[] makePrediction(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int max, @NotNull double[] prediction) {
+    @NonNull
+    public ProbabilityVector getPrediction(@NonNull ProbabilityVector oldVec, @NonNull ProbabilityVector newVec) {
+        if (oldVec.getDimension() != newVec.getDimension()) {
+            throw new IllegalArgumentException("vectors of differing dimension");
+        }
+        double[] predictionVector = new double[oldVec.getDimension()];
+        makePrediction(checkNotNull(oldVec, "oldVec").getValues(), checkNotNull(newVec, "newVec").getValues(), 0, oldVec.getDimension() - 1, predictionVector);
+        return vectorFactory.create(predictionVector);
+    }
+
+    private static void makePrediction(@NotNull @NonNull double[] oldVec, @NotNull @NonNull double[] newVec, int min, int max, @NotNull @NonNull double[] prediction) {
         int mid = (max + min) / 2;
         int length = max - min + 1;
 
         if (length == 1) {
             prediction[mid] = 1;
-            return prediction;
+            return;
         }
 
         double[] oldWeights = sumHalves(oldVec, min, mid, max);
         double[] newWeights = sumHalves(newVec, min, mid, max);
-        double[] projection_R2 = project_R2(oldWeights, newWeights);
+        double[] projectionR2 = projectR2(oldWeights, newWeights);
         makePrediction(oldVec, newVec, min, mid, prediction);
         makePrediction(oldVec, newVec, mid + 1, max, prediction);
         for (int i = min; i <= max; i++) {
-            prediction[i] *= projection_R2[i <= min ? 0 : 1];
+            prediction[i] *= projectionR2[i <= min ? 0 : 1];
         }
-        return normalizeSection(prediction, min, max);
+        normalizeSection(prediction, min, max);
     }
 
-    private static double[] normalizeSection(double[] arr, int min, int max) {
+    private static void normalizeSection(double[] arr, int min, int max) {
         double sum = 0;
         for (int i = min; i <= max; i++) {
             sum += arr[i];
@@ -55,7 +58,6 @@ class Predictor {
         for (int i = min; i <= max; i++) {
             arr[i] /= sum;
         }
-        return arr;
     }
 
     @NotNull
@@ -72,7 +74,7 @@ class Predictor {
      *       Consider a 2x2 matrix M such that its columns are probability vectors and M * o = n.
      *       It can be shown that L=1 must be one of its eigenvalues, and therefore there exists an
      *       eigenvector associated with it.  This function solves for
-     *          a 2x2 probability vector parralel with that eigenvector.
+     *          a 2x2 probability vector parallel with that eigenvector.
      *
      * parameters:
      *    - o, n  are the old and new (respectively) probability vectors of dimension 2.
@@ -85,8 +87,9 @@ class Predictor {
      *    - false if either o or n are not probability vectors of dimension: 2
      *    - true and initializes projection on successful recovery of the vector.
      */
-    @NotNull @VisibleForTesting()
-    static double[] project_R2(double o[], double n[]) {
+    @NotNull
+    @VisibleForTesting()
+    static double[] projectR2(double[] o, double[] n) {
         double[] projection = new double[2];
 
         if (isZero(o[0] - n[0])) {
@@ -145,5 +148,4 @@ class Predictor {
         }
         return projection;
     }
-
 }

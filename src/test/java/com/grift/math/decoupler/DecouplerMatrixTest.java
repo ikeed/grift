@@ -2,27 +2,31 @@ package com.grift.math.decoupler;
 
 import java.util.List;
 import java.util.Map;
-import com.grift.math.ProbabilityVector;
-import com.grift.forex.symbol.SymbolIndexMap;
-import com.grift.forex.symbol.SymbolPair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.grift.GriftApplication;
+import com.grift.forex.symbol.SymbolIndexMap;
+import com.grift.forex.symbol.SymbolPair;
+import com.grift.math.ProbabilityVector;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import static java.lang.Math.abs;
+import static org.apache.commons.math.util.MathUtils.EPSILON;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
-@RunWith(MockitoJUnitRunner.class)
-public abstract class DecouplerMatrixTest {
+@RunWith(SpringRunner.class)
+@SpringBootTest(classes = {DecouplerMatrix.class})
+@ContextConfiguration(name = "fixture", classes = {GriftApplication.class})
+public class DecouplerMatrixTest {
 
     private final double epsilon = 0.000001;
-    SymbolIndexMap symbolIndexMap;
+    private SymbolIndexMap symbolIndexMap;
     private Factory factory;
 
     @Before
@@ -31,38 +35,39 @@ public abstract class DecouplerMatrixTest {
         for (String s : Lists.newArrayList("CAD", "USD", "EUR")) {
             symbolIndexMap.addSymbol(s);
         }
-        factory = getFactory();
+        factory = new DecouplerMatrixColtImpl.ColtFactory(symbolIndexMap);
     }
-
-    @NotNull
-    protected abstract Factory getFactory();
 
     @Test
     public void decouple() {
         final List<String> allSymbols = symbolIndexMap.getAllSymbols();
         final Map<String, Double> trueValues = createRandomValues(allSymbols);
         final DecouplerMatrix mat = setInitialConditions(trueValues);
-
         ProbabilityVector result = mat.decouple();
 
         for (String sym1 : allSymbols) {
-            for (String sym2 : allSymbols) {
-                if (sym1.equals(sym2)) continue;
-                double expected = trueValues.get(sym1) / trueValues.get(sym2);
-                double actual = result.get(sym1) / result.get(sym2);
-                assertTrue("Mismatch", abs(expected - actual) < epsilon);
-            }
+            Double expected = trueValues.get(sym1);
+            Integer index = symbolIndexMap.get(sym1);
+            double actual = result.get(index);
+            assertEquals("mismatch", expected, actual, epsilon);
         }
     }
 
     @Test
     public void rowsAndColumns() {
-        final List<String> allSymbols = symbolIndexMap.getAllSymbols();
-        final Map<String, Double> trueValues = createRandomValues(allSymbols);
+        final Map<String, Double> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
         final DecouplerMatrix mat = setInitialConditions(trueValues);
 
         assertEquals("rows", symbolIndexMap.size(), mat.rows());
         assertEquals("columns", symbolIndexMap.size(), mat.columns());
+    }
+
+    @Test
+    public void getValueInvalidSymbol() {
+        final Map<String, Double> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
+        final DecouplerMatrix mat = setInitialConditions(trueValues);
+
+        assertEquals(0, mat.get(new SymbolPair("OOPSEZ")), EPSILON);
     }
 
     @Test
@@ -91,14 +96,20 @@ public abstract class DecouplerMatrixTest {
     }
 
     private DecouplerMatrix setInitialConditions(Map<String, Double> trueValues) {
-        DecouplerMatrix mat = factory.make();
-        List<String> currencyList = Lists.newArrayList(trueValues.keySet());
+        final DecouplerMatrix mat = factory.make();
+        final List<String> currencyList = Lists.newArrayList(trueValues.keySet());
+
         for (int i = 0; i < currencyList.size(); i++) {
-            for (int j = i; j < currencyList.size(); j++) {
+            for (int j = 0; j < currencyList.size(); j++) {
+                if (i == j) continue;
                 final String sym1 = currencyList.get(i);
                 final String sym2 = currencyList.get(j);
                 SymbolPair pair = new SymbolPair(sym1 + sym2);
-                mat.put(pair, trueValues.get(sym1) / trueValues.get(sym2));
+                Double val1 = trueValues.get(sym1);
+                Double val2 = trueValues.get(sym2);
+                double val = val1 / val2;
+                mat.put(pair, val);
+//                mat.put(new SymbolPair(sym1 + sym2), 1 / val);
             }
         }
         return mat;
@@ -106,9 +117,15 @@ public abstract class DecouplerMatrixTest {
 
     @NotNull
     private Map<String, Double> createRandomValues(List<String> currencyList) {
+        double sum = 0;
         Map<String, Double> trueValues = Maps.newHashMap();
         for (String key : currencyList) {
-            trueValues.put(key, 1000 * Math.random());
+            double value = 1000 * Math.random();
+            sum += value;
+            trueValues.put(key, value);
+        }
+        for (Map.Entry<String, Double> entry : trueValues.entrySet()) {
+            trueValues.put(entry.getKey(), entry.getValue() / sum);
         }
         return trueValues;
     }
