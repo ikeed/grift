@@ -36,6 +36,7 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     private DecouplerMatrixColtImpl(@NotNull SymbolIndexMap symbolIndexMap) {
         this.symbolIndexMap = symbolIndexMap;
         this.mostRecentValue = new HashMap<>();
+
         this.eigenDecomposition = DecompositionFactory.eig(symbolIndexMap.size(), true);
         this.vectorFactory = new ProbabilityVector.Factory(symbolIndexMap.getImmutableCopy());
     }
@@ -83,7 +84,7 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     @Override
     public ProbabilityVector decouple() {
         DenseMatrix64F solution = findSolutionVector();
-        return vectorFactory.create(ProbabilityVector.normalize(solution.data));
+        return vectorFactory.create(solution.data);
     }
 
     @Override

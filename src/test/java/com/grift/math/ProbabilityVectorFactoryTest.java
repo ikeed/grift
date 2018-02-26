@@ -49,4 +49,11 @@ public class ProbabilityVectorFactoryTest {
         assertEquals("Vectors don't match", probabilityVector.toString(), result.toString());
     }
 
+
+    @Test
+    public void testNegativeElements() {
+        ProbabilityVector.Factory factory = new ProbabilityVector.Factory("CAD", "USD", "GBP");
+        ProbabilityVector probabilityVector = factory.create(-0.2, -0.3, -0.5);
+        assertEquals("[0.2, 0.3, 0.5]", probabilityVector.toString());
+    }
 }

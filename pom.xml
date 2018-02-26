@@ -132,6 +132,11 @@
 			<artifactId>ejml</artifactId>
 			<version>0.25</version>
 		</dependency>
+		<dependency>
+			<groupId>ch.obermuhlner</groupId>
+			<artifactId>big-math</artifactId>
+			<version>1.2.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>

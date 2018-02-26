@@ -37,6 +37,6 @@ public class PredictionServiceTest {
         ProbabilityVector oldVector = vectorFactory.create(0.2, 0.2, 0.6);
         ProbabilityVector newVector = vectorFactory.create(0.25, 0.18, 0.57);
         ProbabilityVector result = predictionService.makePrediction(oldVector, newVector);
-        assertEquals("[0.286448067655979, 0.1772020329361286, 0.5363498994078925]", result.toString());
+        assertEquals("[0.286448067655979, 0.17720203293612857, 0.5363498994078927]", result.toString());
     }
 }

@@ -1,13 +1,19 @@
 package com.grift.math.predictor;
 
+import java.util.List;
+import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.math.ProbabilityVector;
+import com.grift.math.real.Real;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.util.StopWatch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -15,9 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PredictorTest {
-
-    private static final double DELTA = 0.0000001;
-
     private ImmutableSymbolIndexMap immutableSymbolIndexMap;
     private Predictor predictor;
     private ProbabilityVector.Factory vectorFactory;
@@ -46,13 +49,6 @@ public class PredictorTest {
 
         ProbabilityVector vector2d = factory2d.create(10, 20);
         new Predictor(immutableSymbolIndexMap).getPrediction(vector3d, vector2d);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void negativeElement() {
-        ProbabilityVector v1 = vectorFactory.create(-10, -20, -30);
-        ProbabilityVector v2 = vectorFactory.create(10, -20, 30);
-        predictor.getPrediction(v1, v2);
     }
 
     @Test
@@ -90,10 +86,58 @@ public class PredictorTest {
 
     @Test
     public void projectR2SameVector() {
-        double[] o = new double[]{0.2, 0.8};
-        double[] n = new double[]{0.2, 0.8};
-        double[] result = Predictor.projectR2(o, n);
-        assertEquals("should be same vector", o[0], result[0], DELTA);
-        assertEquals("should be same vector", o[1], result[1], DELTA);
+        Real[] result = Predictor.projectR2(Real.valueOf(0.2), Real.valueOf(0.2));
+        assertEquals("should be same vector", Real.valueOf(0.2), result[0]);
+        assertEquals("should be same vector", Real.valueOf(0.8), result[1]);
+    }
+
+    @Test @Ignore
+    public void ensureEquilibrium() {
+        final int dimension = 300;
+        final int iterations = 2000;
+        final int[] misfireCount = {0};
+
+        ImmutableSymbolIndexMap map = new ImmutableSymbolIndexMap(getStrings(dimension));
+        ProbabilityVector.Factory factory = new ProbabilityVector.Factory(map);
+        Predictor predictor = new Predictor(map);
+        StopWatch watch = new StopWatch();
+        IntStream.range(0, iterations).forEach(i -> {
+            final ProbabilityVector[] v1 = {factory.create(randomVals(dimension))};
+            final ProbabilityVector[] v2 = {wiggle(factory, v1[0])};
+            watch.start();
+            ProbabilityVector result = predictor.getPrediction(v1[0], v2[0]);
+            watch.stop();
+            for (double d : result.getValues()) {
+                if (Double.isNaN(d) || Double.isInfinite(d) || d < 0 || d > 1) {
+                    misfireCount[0]++;
+                    break;
+                }
+            }
+        });
+        long totalTime = watch.getTotalTimeMillis();
+        double averageMilis = ((double) totalTime) / ((double) iterations);
+        double misfirePercentage = 100 * ((double) misfireCount[0]) / ((double) iterations);
+    }
+
+    private double[] randomVals(int dimension) {
+        return IntStream.range(0, dimension).mapToDouble(i -> 100 * Math.random()).toArray();
+    }
+
+    @NotNull
+    private String[] getStrings(int dimension) {
+        List<String> arr = Lists.newArrayList();
+        for (int i = 0; i < dimension; i++) {
+            arr.add(String.format("%03d", i));
+        }
+        return arr.toArray(new String[dimension]);
+    }
+
+    private ProbabilityVector wiggle(ProbabilityVector.Factory factory, ProbabilityVector v1) {
+        ProbabilityVector w = factory.copy(v1);
+        double delta = Math.random() / 1000 * Math.pow(-1, Math.round(100 * Math.random()));
+        double ratio = 1 + delta;
+        int index = (int) (Math.round(100 * Math.random()) % v1.getDimension());
+        w.put(index, v1.get(index) * ratio);
+        return w;
     }
 }

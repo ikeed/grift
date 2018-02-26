@@ -47,7 +47,7 @@ public class DecouplerMatrixTest {
         allSymbols.forEach(sym1 -> {
             Double expected = trueValues.get(sym1);
             double actual = result.get(sym1);
-            assertEquals("mismatch", expected, actual, EPSILON);
+            assertEquals("mismatch", expected, actual, 10 * EPSILON);
         });
     }
 
@@ -124,7 +124,7 @@ public class DecouplerMatrixTest {
         AtomicReference<Double> sum = new AtomicReference<>((double) 0);
         Map<String, Double> trueValues = Maps.newHashMap();
         currencyList.forEach(key -> {
-            double value = 1000 * Math.random();
+            double value = 100 * Math.random();
             sum.updateAndGet(v -> v + value);
             trueValues.put(key, value);
         });

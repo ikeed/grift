@@ -1,7 +1,6 @@
 package com.grift.math;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
@@ -33,7 +32,12 @@ public class ProbabilityVector {
 
     private ProbabilityVector(@NotNull SymbolIndexMap symbolIndexMap, @NotNull double[] values) {
         this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
-        this.values = Arrays.copyOf(values, values.length);
+        this.values = normalize(Arrays.copyOf(values, values.length));
+        for (double d : this.values) {
+            if (d < 0) {
+                throw new IllegalArgumentException("Negative values are not allowed");
+            }
+        }
         if (symbolIndexMap.size() != values.length) {
             throw new IllegalArgumentException(String.format("Wrong number of values for symbol table.  Expected: %d, Actual: %d", symbolIndexMap.size(), values.length));
         }
@@ -42,7 +46,16 @@ public class ProbabilityVector {
 
     @NotNull
     public static double[] normalize(@NotNull final double[] data) {
-        return Arrays.stream(checkNotNull(data, "data")).map(d -> d / Arrays.stream(data).sum()).toArray();
+        double sum = Arrays.stream(data).sum();
+        if (sum != 0) {
+            for (int i = 0; i < data.length; i++) {
+                if (data[i] / sum < 0) {
+                    throw new IllegalStateException("Negative elements are not allowed");
+                }
+                data[i] /= sum;
+            }
+        }
+        return data;
     }
 
     public void put(@NotNull String symbol, double v) {
@@ -118,15 +131,20 @@ public class ProbabilityVector {
             return false;
         }
         that = (ProbabilityVector) obj;
-        return Arrays.equals(this.getValues(), that.getValues());
+        for (int i = 0; i < getDimension(); i++) {
+            if (!isZero(values[i] - that.getValues()[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void normalize() {
         if (elementSum != 0) {
-            IntStream.range(0, values.length).forEach(i -> values[i] = values[i] / elementSum);
+            normalize(values);
+            elementSum = 1;
+            normalizationRequired = false;
         }
-        elementSum = 1;
-        normalizationRequired = false;
     }
 
     private void assertIndex(int index) {
@@ -152,7 +170,7 @@ public class ProbabilityVector {
     }
 
     private boolean calculateIsNormalizationRequired() {
-        return !(isZero(elementSum - 1) && nonZeroElements == symbolIndexMap.size());
+        return isZero(elementSum) || !(isZero(elementSum - 1) && nonZeroElements == symbolIndexMap.size());
     }
 
     private boolean isZero(double v) {

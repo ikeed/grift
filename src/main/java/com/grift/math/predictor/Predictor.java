@@ -1,18 +1,20 @@
 package com.grift.math.predictor;
 
 import java.util.Arrays;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import com.google.common.annotations.VisibleForTesting;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.math.ProbabilityVector;
+import com.grift.math.real.Real;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
-import static org.apache.commons.math.util.MathUtils.EPSILON;
+import static com.grift.math.real.Real.ONE;
+import static com.grift.math.real.Real.ZERO;
 
 @Component
 public class Predictor {
+
     @NotNull
     private final ProbabilityVector.Factory vectorFactory;
 
@@ -32,18 +34,18 @@ public class Predictor {
         makePrediction(oldVec, newVec, min, mid, prediction);
         makePrediction(oldVec, newVec, mid + 1, max, prediction);
 
-        double[] weights = getElementWeights(oldVec, newVec, min, mid, max);
+        Real[] weights = getElementWeights(oldVec, newVec, min, mid, max);
 
         IntStream.rangeClosed(min, max).forEach(i -> {
-            double weight = weights[i <= mid ? 0 : 1];
-            prediction[i] = prediction[i] * weight;
+            Real weight = weights[i <= mid ? 0 : 1];
+            prediction[i] = weight.multiply(prediction[i]);
         });
     }
 
-    private static double[] getElementWeights(@NotNull double[] oldVec, @NotNull double[] newVec, int min, int mid, int max) {
+    private static Real[] getElementWeights(@NotNull double[] oldVec, @NotNull double[] newVec, int min, int mid, int max) {
         double[] oldWeights = sumHalves(oldVec, min, mid, max);
         double[] newWeights = sumHalves(newVec, min, mid, max);
-        return projectR2(oldWeights, newWeights);
+        return projectR2(Real.valueOf(oldWeights[0]), Real.valueOf(newWeights[0]));
     }
 
     @NotNull
@@ -76,15 +78,15 @@ public class Predictor {
      */
     @NotNull
     @VisibleForTesting()
-    static double[] projectR2(double[] o, double[] n) {
-        if (isZero(o[0] - n[0])) {
+    static Real[] projectR2(Real o, Real n) {
+        if (o.equals(n)) {
             //Since o and n are both probability vectors of degree 2, we now know that
             //o and n must be the same vector.  The most sensible prediction is that the system is static.
             //copy o into projection and be done with it because nothing is changing right now.
-            return normalize(Arrays.copyOf(o, 2));
+            return new Real[]{n, ONE.subtract(n)};
         }
 
-        double[] projection = calculate2DProjectionVector(o[0], n[0]);
+        Real[] projection = calculate2DProjectionVector(o, n);
 
         /* I can prove inductively that if the vector o is not the zero vector (we checked with isProbabilityVector above eh?)
          * then the steady-state vector cannot be the zero vector.  Furthermore, its components must be non-negative.
@@ -94,7 +96,7 @@ public class Predictor {
         return normalize(projection);
     }
 
-    private static double[] calculate2DProjectionVector(double v, double v1) {
+    private static Real[] calculate2DProjectionVector(@NotNull Real v, @NotNull Real v1) {
         /* Sorry for the voodoo here.  I solved the 2x2 case myself and derived a general formula for
          * the steady state vector, up to one degree of freedom.  Let's call the free scalar s.
          * I then found formulae for the least-upper-bound on s (called max below)
@@ -106,13 +108,23 @@ public class Predictor {
          */
 
         //<black_magic>
-        double[] projection = new double[2];
-
-        double min = Math.max(0, ((1 - v - v1) / (1 - v)));
-        double max = Math.min(1, ((1 - v1) / (1 - v)));
-        double log = Math.log(((1 + v - v1 - max) / (1 + v - v1 - min)));
-        double p1 = v * (max - min + (v - v1) * log);
-        double p2 = (max - min) - v * (max - min) + (v * v1 - v * v) * log;
+        Real[] projection = new Real[2];
+        Real w = v.subtract(v1);
+        Real x = ONE.subtract(v);
+        Real y = ONE.add(w);
+        Real min = (x.subtract(v1)).divide(x);
+        if (min.isNegative()) {
+            min = ZERO;
+        }
+        Real max = (ONE.subtract(v1)).divide(x);
+        if (max.isGreaterThan(ONE)) {
+            max = ONE;
+        }
+        Real logOperand = (y.subtract(max)).divide(y.subtract(min));
+        Real vwlog = v.multiply(w).multiply(logOperand.ln());
+        Real range = max.subtract(min);
+        Real p1 = v.multiply(range).add(vwlog);
+        Real p2 = x.multiply(range).subtract(vwlog);
         //</black_magic>
 
         projection[0] = p1;
@@ -120,18 +132,25 @@ public class Predictor {
         return projection;
     }
 
-    private static boolean isZero(double v) {
-        return Math.abs(v) < EPSILON;
+    @NotNull
+    private static double[] normalize(double... projection) {
+        double sum = Arrays.stream(projection).sum();
+        for (int i = 0; i < projection.length; i++) {
+            projection[i] = projection[i] / sum;
+        }
+        return projection;
     }
 
     @NotNull
-    private static double[] normalize(double... projection) {
-        final double sum = DoubleStream.of(projection).sum();
-        if (sum != 0) {
-            IntStream.range(0, projection.length).forEach(i -> {
-                projection[i] /= sum;
-                if (projection[i] < 0) throw new IllegalArgumentException("Negative values not allowed");
-            });
+    private static Real[] normalize(Real... projection) {
+        Real sum = ZERO;
+        for (Real d : projection) {
+            sum = sum.add(d);
+        }
+        if (!sum.isZero()) {
+            for (int i = 0; i < projection.length; i++) {
+                projection[i] = projection[i].divide(sum);
+            }
         }
         return projection;
     }
