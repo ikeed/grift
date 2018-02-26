@@ -10,8 +10,9 @@ import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
-import com.grift.math.decoupler.DecouplerMatrixColtImpl;
+import com.grift.math.decoupler.DecouplerMatrixEJMLImpl;
 import com.grift.math.decoupler.Factory;
+import com.grift.math.real.Real;
 import com.grift.model.Tick;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
@@ -21,7 +22,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.apache.commons.math.util.MathUtils.EPSILON;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -31,53 +31,52 @@ import static org.junit.Assert.assertTrue;
 public class DecoupleServiceTest {
 
     @Deprecated //TODO: Fix accuracy!
-    private static final double SHITTY_EPSILON = 10 * EPSILON;
     private DecoupleService decoupleService;
 
-    private static double getPairedValueFromValueMap(Map<String, Double> valMap, SymbolPair symbolPair) {
-        return valMap.get(symbolPair.getFirst()) / valMap.get(symbolPair.getSecond());
+    private static Real getPairedValueFromValueMap(Map<String, Real> valMap, SymbolPair symbolPair) {
+        return valMap.get(symbolPair.getFirst()).divide(valMap.get(symbolPair.getSecond()));
     }
 
     @Before
     public void setup() {
         SymbolIndexMap symbolIndexMap = new SymbolIndexMap().addSymbols(Lists.newArrayList("USD", "CAD", "GBP"));
-        Factory factory = new DecouplerMatrixColtImpl.ColtFactory(symbolIndexMap);
+        Factory factory = new DecouplerMatrixEJMLImpl.EJMLFactory(symbolIndexMap);
         decoupleService = new DecoupleService(factory);
     }
 
     @Test
     public void insertTick() {
-        insertTick("USDCAD", 10.12);
+        insertTick("USDCAD", new Real(10.12));
     }
 
     @Test
     public void insertTickUpdates() {
-        double USD = 10;
-        double CAD = 20;
-        double GBP = 5;
+        Real USD = new Real(10);
+        Real CAD = new Real(20);
+        Real GBP = new Real(5);
 
         ProbabilityVector result;
-        insertTick("USDCAD", USD / CAD);
-        insertTick("GBPCAD", GBP / CAD);
+        insertTick("USDCAD", USD.divide(CAD));
+        insertTick("GBPCAD", GBP.divide(CAD));
         result = decoupleService.decouple();
-        assertEquals(USD / CAD, result.get("USD") / result.get("CAD"), SHITTY_EPSILON);
-        USD = 15;
-        insertTick("USDCAD", USD / CAD);
+        assertEquals(USD.divide(CAD), result.get("USD").divide(result.get("CAD")).setDigitsPrecision(2));
+        USD = new Real(15);
+        insertTick("USDCAD", USD.divide(CAD));
         result = decoupleService.decouple();
-        assertEquals(USD / CAD, result.get("USD") / result.get("CAD"), SHITTY_EPSILON);
+        assertEquals(USD.divide(CAD), result.get("USD").divide(result.get("CAD")).setDigitsPrecision(2));
     }
 
-    private void insertTick(String pair, double val) {
-        decoupleService.insertTick(new Tick(new SymbolPair(pair), val, Instant.now()));
+    private void insertTick(String pair, Real val) {
+        decoupleService.insertTick(new Tick(new SymbolPair(pair), val.toDouble(), Instant.now()));
     }
 
     @Test
     public void testDecouple() {
-        Map<String, Double> valMap = new HashMap<>();
-        valMap.put("CAD", 100d);
-        valMap.put("USD", 12d);
-        valMap.put("GBP", 700d);
-        valMap.put("EUR", 50d);
+        Map<String, Real> valMap = new HashMap<>();
+        valMap.put("CAD", new Real(100));
+        valMap.put("USD", new Real(12));
+        valMap.put("GBP", new Real(700));
+        valMap.put("EUR", new Real(70));
 
         final List<SymbolPair> symbolPairs = Lists.newArrayList(
                 new SymbolPair("CADUSD"),
@@ -92,23 +91,21 @@ public class DecoupleServiceTest {
         insertAllTicksFromValueMap(valMap);
 
         ProbabilityVector decoupling = decoupleService.decouple();
-        Map<SymbolPair, Double> result = decoupleService.recouple(symbolPairs, decoupling);
+        Map<SymbolPair, Real> result = decoupleService.recouple(symbolPairs, decoupling);
 
         assertEquals("sizes differ?", symbolPairs.size(), result.size());
         symbolPairs.forEach(pair -> {
             assertTrue("missing pair", result.containsKey(pair));
-            //TODO: Fix accuracy
-            double SHITTY_EPSILON = 1000 * EPSILON;
-            assertEquals("values differ", getPairedValueFromValueMap(valMap, pair), result.get(pair), SHITTY_EPSILON);
+            assertEquals("values differ", getPairedValueFromValueMap(valMap, pair).setDigitsPrecision(14), result.get(pair).setDigitsPrecision(14));
         });
     }
 
-    private void insertAllTicksFromValueMap(Map<String, Double> valMap) {
+    private void insertAllTicksFromValueMap(Map<String, Real> valMap) {
         valMap.keySet().forEach(sym1 -> valMap.keySet().stream().filter(sym2 -> !sym1.equals(sym2)).forEachOrdered(sym2 -> insertTick(sym1 + sym2, getPairedValueFromValueMap(valMap, new SymbolPair(sym1, sym2)))));
     }
 
     @NotNull
     private Factory getFactory(@NotNull ImmutableSymbolIndexMap map) {
-        return new DecouplerMatrixColtImpl.ColtFactory(map);
+        return new DecouplerMatrixEJMLImpl.EJMLFactory(map);
     }
 }

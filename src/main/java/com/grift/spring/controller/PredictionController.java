@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
+import com.grift.math.real.Real;
 import com.grift.spring.service.DecoupleService;
 import com.grift.spring.service.PredictionService;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +39,7 @@ public class PredictionController {
 
     @NotNull
     @RequestMapping(method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE}, path = "/prediction")
-    public List<Map<SymbolPair, Double>> getPrediction(@NotNull @RequestBody List<ProbabilityVector> vectors) {
+    public List<Map<SymbolPair, Real>> getPrediction(@NotNull @RequestBody List<ProbabilityVector> vectors) {
         return IntStream.range(0, vectors.size() - 1).mapToObj(i -> predictionService.makePrediction(vectors.get(i), vectors.get(i + 1))).map(prediction -> decoupleService.recouple(symbolList, prediction)).collect(Collectors.toList());
     }
 }

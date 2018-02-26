@@ -7,6 +7,7 @@ import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
 import com.grift.math.decoupler.DecouplerMatrix;
 import com.grift.math.decoupler.Factory;
+import com.grift.math.real.Real;
 import com.grift.model.Tick;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +25,12 @@ public class DecoupleService {
         matrix = decouplerFactory.make();
     }
 
-    private static double getRatioFromProbabilityVector(@NotNull ProbabilityVector vector, SymbolPair symbolPair) {
-        return vector.get(symbolPair.getFirst()) / vector.get(symbolPair.getSecond());
+    private static Real getRatioFromProbabilityVector(@NotNull ProbabilityVector vector, SymbolPair symbolPair) {
+        return vector.get(symbolPair.getFirst()).divide(vector.get(symbolPair.getSecond()));
     }
 
     public void insertTick(@NotNull Tick tick) {
-        matrix.put(checkNotNull(tick).getSymbolPair(), tick.getVal());
+        matrix.put(checkNotNull(tick).getSymbolPair(), Real.valueOf(tick.getVal()));
     }
 
     @NotNull
@@ -38,7 +39,7 @@ public class DecoupleService {
     }
 
     @NotNull
-    public Map<SymbolPair, Double> recouple(@NotNull List<SymbolPair> symbolPairs, @NotNull ProbabilityVector vector) {
+    public Map<SymbolPair, Real> recouple(@NotNull List<SymbolPair> symbolPairs, @NotNull ProbabilityVector vector) {
         return symbolPairs.stream().collect(Collectors.toMap(symbolPair -> symbolPair, symbolPair -> getRatioFromProbabilityVector(vector, symbolPair), (a, b) -> b));
     }
 }

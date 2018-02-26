@@ -10,6 +10,7 @@ import com.grift.GriftApplication;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
+import com.grift.math.real.Real;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,14 +20,15 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static com.google.common.collect.Sets.cartesianProduct;
-import static org.apache.commons.math.util.MathUtils.EPSILON;
+import static com.grift.math.real.Real.ZERO;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {DecouplerMatrix.class})
 @ContextConfiguration(name = "fixture", classes = {GriftApplication.class})
-public class DecouplerMatrixTest {
+public abstract class DecouplerMatrixTest {
 
+    private static final int DIGITS_PRECISION = 13;
     private SymbolIndexMap symbolIndexMap;
     private Factory factory;
 
@@ -34,26 +36,29 @@ public class DecouplerMatrixTest {
     public void setup() {
         symbolIndexMap = new SymbolIndexMap();
         Lists.newArrayList("CAD", "USD", "EUR").forEach(s -> symbolIndexMap.addSymbol(s));
-        factory = new DecouplerMatrixColtImpl.ColtFactory(symbolIndexMap);
+        factory = getFactory(symbolIndexMap);
     }
+
+    @NotNull
+    protected abstract Factory getFactory(SymbolIndexMap symbolIndexMap);
 
     @Test
     public void decouple() {
         final List<String> allSymbols = symbolIndexMap.getAllSymbols();
-        final Map<String, Double> trueValues = createRandomValues(allSymbols);
+        final Map<String, Real> trueValues = createRandomValues(allSymbols);
         final DecouplerMatrix mat = setInitialConditions(trueValues);
         ProbabilityVector result = mat.decouple();
 
         allSymbols.forEach(sym1 -> {
-            Double expected = trueValues.get(sym1);
-            double actual = result.get(sym1);
-            assertEquals("mismatch", expected, actual, 10 * EPSILON);
+            Real expected = trueValues.get(sym1);
+            Real actual = result.get(sym1);
+            assertEquals("mismatch", expected.setDigitsPrecision(DIGITS_PRECISION), actual.setDigitsPrecision(DIGITS_PRECISION));
         });
     }
 
     @Test
     public void rowsAndColumns() {
-        final Map<String, Double> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
+        final Map<String, Real> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
         final DecouplerMatrix mat = setInitialConditions(trueValues);
 
         assertEquals("rows", symbolIndexMap.size(), mat.rows());
@@ -62,29 +67,29 @@ public class DecouplerMatrixTest {
 
     @Test
     public void getValueInvalidSymbol() {
-        final Map<String, Double> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
+        final Map<String, Real> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
         final DecouplerMatrix mat = setInitialConditions(trueValues);
 
-        assertEquals(0, mat.get(new SymbolPair("OOPSEZ")), EPSILON);
+        assertEquals(ZERO, mat.get(new SymbolPair("OOPSEZ")));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void putValueNegative() {
-        final Map<String, Double> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
+        final Map<String, Real> trueValues = createRandomValues(symbolIndexMap.getAllSymbols());
         final DecouplerMatrix mat = setInitialConditions(trueValues);
-        mat.put(new SymbolPair("USDCAD"), -10);
+        mat.put(new SymbolPair("USDCAD"), Real.valueOf(-10));
     }
 
     @Test
     public void newTick() {
         final List<String> allSymbols = symbolIndexMap.getAllSymbols();
-        final Map<String, Double> trueValues = createRandomValues(allSymbols);
+        final Map<String, Real> trueValues = createRandomValues(allSymbols);
         final DecouplerMatrix mat = setInitialConditions(trueValues);
         SymbolPair symbolPair = getRandomPair(allSymbols);
 
-        mat.put(symbolPair, 1000);
+        mat.put(symbolPair, Real.valueOf(1000));
 
-        assertEquals("Should match", 1000, mat.get(symbolPair), EPSILON);
+        assertEquals("Should match", Real.valueOf(1000), mat.get(symbolPair));
     }
 
     private int randomInt(int tooLarge) {
@@ -101,7 +106,7 @@ public class DecouplerMatrixTest {
     }
 
     @NotNull
-    private DecouplerMatrix setInitialConditions(Map<String, Double> trueValues) {
+    private DecouplerMatrix setInitialConditions(Map<String, Real> trueValues) {
         final DecouplerMatrix mat = factory.make();
         final List<String> currencyList = Lists.newArrayList(trueValues.keySet());
 
@@ -111,24 +116,24 @@ public class DecouplerMatrixTest {
             String sym2 = pair.get(1);
             if (sym1.equals(sym2)) return;
             SymbolPair symbolPair = new SymbolPair(sym1 + sym2);
-            Double val1 = trueValues.get(sym1);
-            Double val2 = trueValues.get(sym2);
-            double val = val1 / val2;
+            Real val1 = trueValues.get(sym1);
+            Real val2 = trueValues.get(sym2);
+            Real val = val1.divide(val2);
             mat.put(symbolPair, val);
         });
         return mat;
     }
 
     @NotNull
-    private Map<String, Double> createRandomValues(List<String> currencyList) {
-        AtomicReference<Double> sum = new AtomicReference<>((double) 0);
-        Map<String, Double> trueValues = Maps.newHashMap();
+    private Map<String, Real> createRandomValues(List<String> currencyList) {
+        AtomicReference<Real> sum = new AtomicReference<>(ZERO);
+        Map<String, Real> trueValues = Maps.newHashMap();
         currencyList.forEach(key -> {
-            double value = 100 * Math.random();
-            sum.updateAndGet(v -> v + value);
+            Real value = new Real(100 * Math.random());
+            sum.updateAndGet(v -> v.plus(value));
             trueValues.put(key, value);
         });
-        trueValues.forEach((key, value) -> trueValues.put(key, value / sum.get()));
+        trueValues.forEach((key, value) -> trueValues.put(key, value.divide(sum.get())));
         return trueValues;
     }
 }

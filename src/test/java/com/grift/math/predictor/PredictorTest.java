@@ -9,12 +9,13 @@ import com.grift.math.ProbabilityVector;
 import com.grift.math.real.Real;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.util.StopWatch;
 
+import static com.grift.math.real.Real.ONE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -69,54 +70,59 @@ public class PredictorTest {
         ProbabilityVector v1 = vectorFactory2d.create(0.2, 0.8);
         ProbabilityVector v2 = vectorFactory2d.create(0.5, 0.5);
         Predictor predictor = new Predictor(map);
-        double firstComponent = 0.13798;
-        double secondComponent = 0.11202;
-        double sum = firstComponent + secondComponent;
-        firstComponent /= sum;
-        secondComponent /= sum;
+        Real firstComponent = new Real(0.551920896510422490717978129114270296037866572864989839524244282486232889785392291006230138070421776);
+        Real secondComponent = new Real(0.448079103489577509282021870885729703962133427135010160475755717513767110214607708993769861929578224);
 
-        assertEquals("sanity check", firstComponent, 1 - secondComponent, 0.0000001);
+        assertTrue("sanity check", firstComponent.equals(ONE.subtract(secondComponent)));
 
+        Real[] result = predictor.getPrediction(v1, v2).getValues();
 
-        double[] result = predictor.getPrediction(v1, v2).getValues();
-
-        assertEquals("differed in first component", firstComponent, result[0], 0.00001);
-        assertEquals("differed in second component", secondComponent, result[1], 0.00001);
+        assertTrue("differed in first component", firstComponent.setDigitsPrecision(2).equals(result[0].setDigitsPrecision(2)));
+        assertTrue("differed in second component", secondComponent.setDigitsPrecision(2).equals(result[1].setDigitsPrecision(2)));
     }
 
     @Test
     public void projectR2SameVector() {
         Real[] result = Predictor.projectR2(Real.valueOf(0.2), Real.valueOf(0.2));
-        assertEquals("should be same vector", Real.valueOf(0.2), result[0]);
-        assertEquals("should be same vector", Real.valueOf(0.8), result[1]);
+        assertEquals("should be same vector", Real.valueOf(0.2).setDigitsPrecision(2), result[0].setDigitsPrecision(2));
+        assertEquals("should be same vector", Real.valueOf(0.8).setDigitsPrecision(2), result[1].setDigitsPrecision(2));
     }
 
-    @Test @Ignore
+    @Test
     public void ensureEquilibrium() {
         final int dimension = 300;
-        final int iterations = 2000;
-        final int[] misfireCount = {0};
+        final int iterations = 200;
+        final int[] missed = {0};
 
         ImmutableSymbolIndexMap map = new ImmutableSymbolIndexMap(getStrings(dimension));
         ProbabilityVector.Factory factory = new ProbabilityVector.Factory(map);
         Predictor predictor = new Predictor(map);
         StopWatch watch = new StopWatch();
         IntStream.range(0, iterations).forEach(i -> {
-            final ProbabilityVector[] v1 = {factory.create(randomVals(dimension))};
-            final ProbabilityVector[] v2 = {wiggle(factory, v1[0])};
+            final ProbabilityVector v1 = factory.create(randomVals(dimension));
+            final ProbabilityVector v2 = wiggle(factory, v1);
             watch.start();
-            ProbabilityVector result = predictor.getPrediction(v1[0], v2[0]);
+            ProbabilityVector result = predictor.getPrediction(v1, v2);
             watch.stop();
-            for (double d : result.getValues()) {
-                if (Double.isNaN(d) || Double.isInfinite(d) || d < 0 || d > 1) {
-                    misfireCount[0]++;
-                    break;
-                }
+            if (!checkResult(result)) {
+                missed[0]++;
             }
         });
         long totalTime = watch.getTotalTimeMillis();
         double averageMilis = ((double) totalTime) / ((double) iterations);
-        double misfirePercentage = 100 * ((double) misfireCount[0]) / ((double) iterations);
+        double missPercentage = 100 * ((double) missed[0]) / iterations;
+        assertThat("taking too long", averageMilis < 75);
+        assertEquals("Empty components", 0, missed[0]);
+    }
+
+    private boolean checkResult(ProbabilityVector result) {
+        for (int i = 0; i < result.getDimension(); i++) {
+            Real future = result.get(i);
+            if (!future.isPositive()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private double[] randomVals(int dimension) {
@@ -137,7 +143,7 @@ public class PredictorTest {
         double delta = Math.random() / 1000 * Math.pow(-1, Math.round(100 * Math.random()));
         double ratio = 1 + delta;
         int index = (int) (Math.round(100 * Math.random()) % v1.getDimension());
-        w.put(index, v1.get(index) * ratio);
+        w.put(index, v1.get(index).times(Real.valueOf(ratio)));
         return w;
     }
 }

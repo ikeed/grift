@@ -2,6 +2,7 @@ package com.grift.math.decoupler;
 
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.ProbabilityVector;
+import com.grift.math.real.Real;
 import org.jetbrains.annotations.NotNull;
 
 public interface DecouplerMatrix {
@@ -12,7 +13,8 @@ public interface DecouplerMatrix {
 
     int columns();
 
-    void put(@NotNull SymbolPair symbolPair, double val);
+    void put(@NotNull SymbolPair symbolPair, Real val);
 
-    double get(@NotNull SymbolPair symbolPair);
+    Real get(@NotNull SymbolPair symbolPair);
+
 }

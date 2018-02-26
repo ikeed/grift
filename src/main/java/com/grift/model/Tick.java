@@ -5,9 +5,10 @@ import com.grift.forex.symbol.SymbolPair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
-@Getter @Setter @AllArgsConstructor @Builder
+@Getter
+@AllArgsConstructor
+@Builder
 public class Tick {
     private SymbolPair symbolPair;
     private double val;

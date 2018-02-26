@@ -6,16 +6,19 @@ import java.util.HashSet;
 import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import com.grift.forex.symbol.SymbolIndexMap;
+import com.grift.math.real.Real;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.apache.commons.math.util.MathUtils.EPSILON;
+import static com.grift.math.real.Real.ZERO;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProbabilityVectorTest {
@@ -35,115 +38,106 @@ public class ProbabilityVectorTest {
     @Test
     public void oneArgConstructor() {
         ProbabilityVector probabilityVector = vectorFactory.create();
-        IntStream.range(0, symbolIndexMap.size()).forEach(i -> assertEquals("should start at zero", 0, probabilityVector.get(i), EPSILON));
-        symbolIndexMap.keySet().forEach(symbol -> assertEquals("should start at zero", 0, probabilityVector.get(symbol), EPSILON));
+        IntStream.range(0, symbolIndexMap.size()).forEach(i -> assertEquals("should start at zero", ZERO, probabilityVector.get(i)));
+        for (String symbol : symbolIndexMap.keySet()) {
+            assertEquals("should start at zero", ZERO, probabilityVector.get(symbol));
+        }
         assertEquals("dimension should be set", symbolIndexMap.size(), probabilityVector.getDimension());
         assertNotNull("symbol map should be initialized", probabilityVector.getSymbolIndexMap());
     }
 
     @Test
     public void twoArgConstructor() {
-        double[] expected = new double[]{
-                /*CAD*/ 10,
-                /*USD*/ 20,
-                /*GBP*/ 30
-        };
-        ProbabilityVector probabilityVector = vectorFactory.create( expected);
-        IntStream.range(0, SYMBOLS.size()).forEach(i -> assertEquals("value mismatch", expected[i] / 60, probabilityVector.get(i), EPSILON));
-        SYMBOLS.forEach(symbol -> assertEquals("value mismatch", expected[symbolIndexMap.get(symbol)] / 60, probabilityVector.get(symbol), EPSILON));
+        Real[] expected = getReals(10, 20, 30);
+        ProbabilityVector probabilityVector = vectorFactory.create(expected);
+        IntStream.range(0, SYMBOLS.size()).forEach(i -> assertEquals("value mismatch", expected[i].divide(Real.valueOf(60)), probabilityVector.get(i)));
+        SYMBOLS.forEach(symbol -> assertEquals("value mismatch", expected[symbolIndexMap.get(symbol)].divide(Real.valueOf(60)), probabilityVector.get(symbol)));
+    }
+
+    @NotNull
+    public Real[] getReals(double... vals) {
+        Real[] arr = new Real[vals.length];
+        for (int i = 0; i < vals.length; i++) {
+            arr[i] = new Real(vals[i]);
+        }
+        return arr;
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void twoArgConstructorWeirdLength() {
         assertNotEquals("You need to update this test", 4, symbolIndexMap.size());
-        double[] values = new double[] {
-                10, 20, 30, 40
-        };
-        vectorFactory.create( values);
+        vectorFactory.create(getReals(10, 20, 30, 40));
     }
 
     @Test
     public void putGetSymbol() {
-        double[] expected = new double[]{
-                /*CAD*/ 10,
-                /*USD*/ 20,
-                /*GBP*/ 30
-        };
-        ProbabilityVector probabilityVector = vectorFactory.create( expected);
+        Real[] expected = getReals(10, 20, 30);
+        ProbabilityVector probabilityVector = vectorFactory.create(expected);
 
-        probabilityVector.put("USD", probabilityVector.get("USD") * 2);
-        double actual = probabilityVector.get("USD");
+        probabilityVector.put("USD", probabilityVector.get("USD").times(Real.valueOf(2)));
+        Real actual = probabilityVector.get("USD");
 
-        assertEquals(0.5, actual, EPSILON);
+        assertEquals(new Real(0.5).setDigitsPrecision(2), actual.setDigitsPrecision(2));
     }
 
     @Test
     public void putGetIndex() {
-        double[] expected = new double[]{
-                /*CAD*/ 10,
-                /*USD*/ 20,
-                /*GBP*/ 30
-        };
-        ProbabilityVector probabilityVector = vectorFactory.create( expected);
+        Real[] expected = getReals(10, 20, 30);
+        ProbabilityVector probabilityVector = vectorFactory.create(expected);
 
-        probabilityVector.put(1, probabilityVector.get(1) * 2);
-        double actual = probabilityVector.get(1);
+        probabilityVector.put(1, probabilityVector.get(1).times(Real.valueOf(2)));
+        Real actual = probabilityVector.get(1);
 
-        assertEquals(0.5, actual, EPSILON);
+        assertEquals(expected[0].divide(expected[1].setDigitsPrecision(2)), actual.setDigitsPrecision(2));
     }
+
+
+    @Test
+    public void testPutIncremental() {
+        ProbabilityVector vec = vectorFactory.create();
+        vec.put(0, Real.valueOf(10));
+        vec.put(1, Real.valueOf(20));
+        vec.put(2, Real.valueOf(70));
+        assertEquals("[0.1, 0.2, 0.7]", vec.toString());
+    }
+
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void getIndexTooLarge() {
-        double[] expected = new double[]{
-                /*CAD*/ 10,
-                /*USD*/ 20,
-                /*GBP*/ 30
-        };
-        ProbabilityVector probabilityVector = vectorFactory.create( expected);
+        Real[] expected = getReals(10, 20, 30);
+
+        ProbabilityVector probabilityVector = vectorFactory.create(expected);
         probabilityVector.get(3);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void getIndexTooSmall() {
-        double[] expected = new double[]{
-                /*CAD*/ 10,
-                /*USD*/ 20,
-                /*GBP*/ 30
-        };
-        ProbabilityVector probabilityVector = vectorFactory.create( expected);
+        ProbabilityVector probabilityVector = vectorFactory.create(getReals(10, 20, 30));
         probabilityVector.get(-1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void putNegativeValue() {
         ProbabilityVector probabilityVector = vectorFactory.create();
-        probabilityVector.put("CAD", -10);
+        probabilityVector.put("CAD", Real.valueOf(-10));
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void putIndexTooLarge() {
         ProbabilityVector probabilityVector = vectorFactory.create();
-        probabilityVector.put(3, 10);
+        probabilityVector.put(3, Real.valueOf(10));
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void putIndexTooSmall() {
         ProbabilityVector probabilityVector = vectorFactory.create();
-        probabilityVector.put(-1, 10);
-    }
-
-    @Test
-    public void putZeroAfterNonZero() {
-        ProbabilityVector probabilityVector = vectorFactory.create();
-        probabilityVector.put("USD", 10);
-        probabilityVector.put("USD", 0);
-        assertEquals(0, probabilityVector.get("USD"), EPSILON);
+        probabilityVector.put(-1, Real.valueOf(10));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void putBogusSymbol() {
         ProbabilityVector probabilityVector = vectorFactory.create();
-        probabilityVector.put("POO", 10);
+        probabilityVector.put("POO", Real.valueOf(10));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -165,6 +159,21 @@ public class ProbabilityVectorTest {
         //noinspection EqualsBetweenInconvertibleTypes
         assertFalse(probabilityVector.equals(new HashSet<>()));
     }
+
+    @Test
+    public void equalsTrue() {
+        ProbabilityVector probabilityVector = vectorFactory.create(1, 2, 3);
+        ProbabilityVector probabilityVector2 = vectorFactory.create(1, 2, 3);
+        assertTrue(probabilityVector.equals(probabilityVector2));
+    }
+
+    @Test
+    public void equalsFalse() {
+        ProbabilityVector probabilityVector = vectorFactory.create(1, 2, 3);
+        ProbabilityVector probabilityVector2 = vectorFactory.create(1, 2, 3.1);
+        assertFalse(probabilityVector.equals(probabilityVector2));
+    }
+
 
     @Test
     public void toStringNormalizes() {
@@ -189,8 +198,31 @@ public class ProbabilityVectorTest {
 
     @Test
     public void testNormalize() {
-        double[] arr = new double[] { 10, 20, 70};
-        double[] result = ProbabilityVector.normalize(arr);
+        Real[] arr = getReals(10, 20, 70);
+        Real[] result = ProbabilityVector.normalize(arr);
         assertEquals("[0.1, 0.2, 0.7]", Arrays.toString(result));
+    }
+
+    @Test
+    public void testMultiplePut() {
+        ProbabilityVector probabilityVector = vectorFactory.create(1, 2, 7);
+
+        assertEquals("[0.1, 0.2, 0.7]", probabilityVector.toString());
+    }
+
+    @Test
+    public void testPutBackToZero() {
+        Real[] inputs = getReals(10, 20, 30);
+        ProbabilityVector probabilityVector = vectorFactory.create(inputs);
+        probabilityVector.put(1, ZERO);
+        Real[] expected = getReals(0.25, 0, 0.75);
+        for (int i = 0; i < 3; i++) {
+            assertEquals(expected[i].setDigitsPrecision(2), probabilityVector.get(i).setDigitsPrecision(2));
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testNegativeElement() {
+        vectorFactory.create(10, -20, 30);
     }
 }

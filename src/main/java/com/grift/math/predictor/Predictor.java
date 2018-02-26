@@ -1,6 +1,5 @@
 package com.grift.math.predictor;
 
-import java.util.Arrays;
 import java.util.stream.IntStream;
 import com.google.common.annotations.VisibleForTesting;
 import com.grift.forex.symbol.SymbolIndexMap;
@@ -22,12 +21,12 @@ public class Predictor {
         vectorFactory = new ProbabilityVector.Factory(symbolIndexMap.getImmutableCopy());
     }
 
-    private static void makePrediction(@NotNull double[] oldVec, @NotNull double[] newVec, int min, int max, @NotNull double[] prediction) {
+    private static void makePrediction(@NotNull Real[] oldVec, @NotNull Real[] newVec, int min, int max, @NotNull Real[] prediction) {
         int mid = (max + min) / 2;
         int length = max - min + 1;
 
         if (length == 1) {
-            prediction[mid] = 1;
+            prediction[mid] = ONE;
             return;
         }
 
@@ -38,22 +37,22 @@ public class Predictor {
 
         IntStream.rangeClosed(min, max).forEach(i -> {
             Real weight = weights[i <= mid ? 0 : 1];
-            prediction[i] = weight.multiply(prediction[i]);
+            prediction[i] = weight.times(prediction[i]);
         });
     }
 
-    private static Real[] getElementWeights(@NotNull double[] oldVec, @NotNull double[] newVec, int min, int mid, int max) {
-        double[] oldWeights = sumHalves(oldVec, min, mid, max);
-        double[] newWeights = sumHalves(newVec, min, mid, max);
-        return projectR2(Real.valueOf(oldWeights[0]), Real.valueOf(newWeights[0]));
+    private static Real[] getElementWeights(@NotNull Real[] oldVec, @NotNull Real[] newVec, int min, int mid, int max) {
+        Real[] oldWeights = sumHalves(oldVec, min, mid, max);
+        Real[] newWeights = sumHalves(newVec, min, mid, max);
+        return projectR2(oldWeights[0], newWeights[0]);
     }
 
     @NotNull
-    private static double[] sumHalves(double[] arr, int min, int mid, int max) {
-        double[] weights = new double[]{0, 0};
+    private static Real[] sumHalves(Real[] arr, int min, int mid, int max) {
+        Real[] weights = new Real[]{ZERO, ZERO};
         IntStream.rangeClosed(min, max).forEach(i -> {
             int index = i <= mid ? 0 : 1;
-            weights[index] = weights[index] + arr[i];
+            weights[index] = weights[index].plus(arr[i]);
         });
         return normalize(weights);
     }
@@ -80,8 +79,8 @@ public class Predictor {
     @VisibleForTesting()
     static Real[] projectR2(Real o, Real n) {
         if (o.equals(n)) {
-            //Since o and n are both probability vectors of degree 2, we now know that
-            //o and n must be the same vector.  The most sensible prediction is that the system is static.
+            //Since o and n are both the first component of probability vectors of degree 2, we now know that
+            //they must represent the same vector.  The most sensible prediction is that the system is static.
             //copy o into projection and be done with it because nothing is changing right now.
             return new Real[]{n, ONE.subtract(n)};
         }
@@ -111,7 +110,7 @@ public class Predictor {
         Real[] projection = new Real[2];
         Real w = v.subtract(v1);
         Real x = ONE.subtract(v);
-        Real y = ONE.add(w);
+        Real y = ONE.plus(w);
         Real min = (x.subtract(v1)).divide(x);
         if (min.isNegative()) {
             min = ZERO;
@@ -121,10 +120,10 @@ public class Predictor {
             max = ONE;
         }
         Real logOperand = (y.subtract(max)).divide(y.subtract(min));
-        Real vwlog = v.multiply(w).multiply(logOperand.ln());
+        Real vwlog = v.times(w).times(logOperand.ln());
         Real range = max.subtract(min);
-        Real p1 = v.multiply(range).add(vwlog);
-        Real p2 = x.multiply(range).subtract(vwlog);
+        Real p1 = v.times(range).plus(vwlog);
+        Real p2 = x.times(range).subtract(vwlog);
         //</black_magic>
 
         projection[0] = p1;
@@ -133,19 +132,10 @@ public class Predictor {
     }
 
     @NotNull
-    private static double[] normalize(double... projection) {
-        double sum = Arrays.stream(projection).sum();
-        for (int i = 0; i < projection.length; i++) {
-            projection[i] = projection[i] / sum;
-        }
-        return projection;
-    }
-
-    @NotNull
     private static Real[] normalize(Real... projection) {
         Real sum = ZERO;
         for (Real d : projection) {
-            sum = sum.add(d);
+            sum = sum.plus(d);
         }
         if (!sum.isZero()) {
             for (int i = 0; i < projection.length; i++) {
@@ -160,7 +150,7 @@ public class Predictor {
         if (oldVec.getDimension() != newVec.getDimension()) {
             throw new IllegalArgumentException("vectors of differing dimension");
         }
-        double[] predictionVector = new double[oldVec.getDimension()];
+        Real[] predictionVector = new Real[oldVec.getDimension()];
         makePrediction(oldVec.getValues(), newVec.getValues(), 0, oldVec.getDimension() - 1, predictionVector);
         return vectorFactory.create(predictionVector);
     }

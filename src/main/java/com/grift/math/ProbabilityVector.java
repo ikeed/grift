@@ -5,39 +5,36 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
+import com.grift.math.real.Real;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static com.grift.math.real.Real.ONE;
+import static com.grift.math.real.Real.ZERO;
 import static lombok.Lombok.checkNotNull;
-import static org.apache.commons.math.util.MathUtils.EPSILON;
 
 public class ProbabilityVector {
     @NotNull
     private final ImmutableSymbolIndexMap symbolIndexMap;
     @NotNull
-    private final double[] values;
+    private final Real[] values;
 
     private boolean normalizationRequired = false;
     private int nonZeroElements = 0;
-    private double elementSum = 0;
+    private Real elementSum = ZERO;
 
     private ProbabilityVector(@NotNull SymbolIndexMap symbolIndexMap) {
         this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
-        this.values = new double[symbolIndexMap.keySet().size()];
+        this.values = new Real[symbolIndexMap.keySet().size()];
         this.nonZeroElements = 0;
         this.normalizationRequired = false;
-        this.elementSum = 0;
-        Arrays.fill(values, 0d);
+        this.elementSum = ZERO;
+        Arrays.fill(values, ZERO);
     }
 
-    private ProbabilityVector(@NotNull SymbolIndexMap symbolIndexMap, @NotNull double[] values) {
+    private ProbabilityVector(@NotNull SymbolIndexMap symbolIndexMap, @NotNull Real[] values) {
         this.symbolIndexMap = checkNotNull(symbolIndexMap, "map").getImmutableCopy();
         this.values = normalize(Arrays.copyOf(values, values.length));
-        for (double d : this.values) {
-            if (d < 0) {
-                throw new IllegalArgumentException("Negative values are not allowed");
-            }
-        }
         if (symbolIndexMap.size() != values.length) {
             throw new IllegalArgumentException(String.format("Wrong number of values for symbol table.  Expected: %d, Actual: %d", symbolIndexMap.size(), values.length));
         }
@@ -45,46 +42,52 @@ public class ProbabilityVector {
     }
 
     @NotNull
-    public static double[] normalize(@NotNull final double[] data) {
-        double sum = Arrays.stream(data).sum();
-        if (sum != 0) {
+    public static Real[] normalize(@NotNull final Real[] data) {
+        Real sum = ZERO;
+
+        for (Real d : data) {
+            sum = sum.plus(d);
+        }
+        if (!sum.isZero()) {
             for (int i = 0; i < data.length; i++) {
-                if (data[i] / sum < 0) {
-                    throw new IllegalStateException("Negative elements are not allowed");
+                Real normalized = data[i].divide(sum);
+                if (normalized.isNegative()) {
+                    throw new IllegalArgumentException("Negative elements are not allowed");
                 }
-                data[i] /= sum;
+                data[i] = normalized;
             }
         }
         return data;
     }
 
-    public void put(@NotNull String symbol, double v) {
+    public void put(@NotNull String symbol, Real v) {
         assertSymbol(symbol);
         put(symbolIndexMap.get(symbol), v);
     }
 
-    public void put(int index, double v) {
+    public void put(int index, Real val) {
         assertIndex(index);
-        if (v < 0) {
+        if (val.isNegative()) {
             throw new IllegalArgumentException("No negative values allowed");
         }
-        if (isZero(values[index]) && !isZero(v)) {
+        Real v = new Real(val);
+        if (values[index].isZero() && !v.isZero()) {
             nonZeroElements++;
-        } else if (isZero(v) && !isZero(values[index])) {
+        } else if (v.isZero() && !values[index].isZero()) {
             nonZeroElements--;
         }
-        final double delta = v - values[index];
-        normalizationRequired = normalizationRequired || !isZero(delta);
-        elementSum += delta;
+        final Real delta = v.subtract(values[index]);
+        normalizationRequired = normalizationRequired || !delta.isZero();
+        elementSum = elementSum.plus(delta);
         values[index] = v;
     }
 
-    public double get(@NotNull String symbol) {
+    public Real get(@NotNull String symbol) {
         assertSymbol(symbol);
         return get(symbolIndexMap.get(symbol));
     }
 
-    public double get(int index) {
+    public Real get(int index) {
         assertIndex(index);
         if (normalizationRequired) {
             normalize();
@@ -103,11 +106,15 @@ public class ProbabilityVector {
     }
 
     @NotNull
-    public double[] getValues() {
+    public Real[] getValues() {
         if (normalizationRequired) {
             normalize();
         }
-        return Arrays.copyOf(values, getDimension());
+        Real[] arr = new Real[getDimension()];
+        for (int i = 0; i < getDimension(); i++) {
+            arr[i] = new Real(values[i]);
+        }
+        return arr;
     }
 
     @NotNull
@@ -132,7 +139,7 @@ public class ProbabilityVector {
         }
         that = (ProbabilityVector) obj;
         for (int i = 0; i < getDimension(); i++) {
-            if (!isZero(values[i] - that.getValues()[i])) {
+            if (!values[i].equals(that.values[i])) {
                 return false;
             }
         }
@@ -140,9 +147,9 @@ public class ProbabilityVector {
     }
 
     private void normalize() {
-        if (elementSum != 0) {
+        if (!elementSum.isZero()) {
             normalize(values);
-            elementSum = 1;
+            elementSum = ONE;
             normalizationRequired = false;
         }
     }
@@ -159,22 +166,18 @@ public class ProbabilityVector {
         }
     }
 
-    private void setProperties(@NotNull double[] values) {
+    private void setProperties(@NotNull Real[] values) {
         this.nonZeroElements = 0;
-        this.elementSum = 0;
+        this.elementSum = ZERO;
         Arrays.stream(values).forEach(d -> {
-            this.nonZeroElements += (d == 0 ? 0 : 1);
-            this.elementSum += d;
+            this.nonZeroElements += (d.isZero() ? 0 : 1);
+            this.elementSum = this.elementSum.plus(d);
         });
         this.normalizationRequired = calculateIsNormalizationRequired();
     }
 
     private boolean calculateIsNormalizationRequired() {
-        return isZero(elementSum) || !(isZero(elementSum - 1) && nonZeroElements == symbolIndexMap.size());
-    }
-
-    private boolean isZero(double v) {
-        return Math.abs(v) < EPSILON;
+        return elementSum.isZero() || (elementSum.isNotEqual(ONE) && nonZeroElements == symbolIndexMap.size());
     }
 
     private boolean isLegalSymbol(@NotNull String symbol) {
@@ -203,6 +206,15 @@ public class ProbabilityVector {
 
         @NotNull
         public ProbabilityVector create(@NotNull double... values) {
+            Real[] newValues = new Real[values.length];
+            for (int i = 0; i < values.length; i++) {
+                newValues[i] = new Real(values[i]);
+            }
+            return create(newValues);
+        }
+
+        @NotNull
+        public ProbabilityVector create(@NotNull Real... values) {
             return new ProbabilityVector(immutableSymbolIndexMap, values);
         }
 
