@@ -10,6 +10,7 @@ import org.jscience.mathematics.structure.Field;
 
 import static lombok.Lombok.checkNotNull;
 
+@SuppressWarnings("WeakerAccess")
 public class Real implements Field<Real> {
     @NotNull
     private BigFloat.Context context = BigFloat.context(100);

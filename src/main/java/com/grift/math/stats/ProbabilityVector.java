@@ -1,4 +1,4 @@
-package com.grift.math;
+package com.grift.math.stats;
 
 import java.util.Arrays;
 import com.google.common.annotations.VisibleForTesting;

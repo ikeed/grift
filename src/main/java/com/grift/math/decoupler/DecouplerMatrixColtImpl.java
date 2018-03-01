@@ -9,8 +9,8 @@ import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.linalg.EigenvalueDecomposition;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
-import com.grift.math.ProbabilityVector;
 import com.grift.math.real.Real;
+import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 
 import static com.grift.math.real.Real.ZERO;

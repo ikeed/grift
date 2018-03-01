@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
-import com.grift.math.ProbabilityVector;
 import com.grift.math.predictor.Predictor;
+import com.grift.math.stats.ProbabilityVector;
 import org.junit.Before;
 import org.junit.Test;
 

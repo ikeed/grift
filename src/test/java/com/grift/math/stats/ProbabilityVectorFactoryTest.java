@@ -1,4 +1,4 @@
-package com.grift.math;
+package com.grift.math.stats;
 
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import org.junit.Test;

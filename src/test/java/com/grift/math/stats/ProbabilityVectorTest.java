@@ -1,4 +1,4 @@
-package com.grift.math;
+package com.grift.math.stats;
 
 import java.util.ArrayList;
 import java.util.Arrays;

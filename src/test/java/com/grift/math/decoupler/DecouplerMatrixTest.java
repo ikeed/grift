@@ -9,8 +9,8 @@ import com.google.common.collect.Maps;
 import com.grift.GriftApplication;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
-import com.grift.math.ProbabilityVector;
 import com.grift.math.real.Real;
+import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -105,6 +105,7 @@ public abstract class DecouplerMatrixTest {
         return new SymbolPair(allSymbols.get(i) + allSymbols.get(j));
     }
 
+    @SuppressWarnings("unchecked")
     @NotNull
     private DecouplerMatrix setInitialConditions(Map<String, Real> trueValues) {
         final DecouplerMatrix mat = factory.make();

@@ -5,8 +5,8 @@ import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import com.grift.forex.symbol.ImmutableSymbolIndexMap;
 import com.grift.forex.symbol.SymbolIndexMap;
-import com.grift.math.ProbabilityVector;
 import com.grift.math.real.Real;
+import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -110,7 +110,6 @@ public class PredictorTest {
         });
         long totalTime = watch.getTotalTimeMillis();
         double averageMilis = ((double) totalTime) / ((double) iterations);
-        double missPercentage = 100 * ((double) missed[0]) / iterations;
         assertThat("taking too long", averageMilis < 75);
         assertEquals("Empty components", 0, missed[0]);
     }

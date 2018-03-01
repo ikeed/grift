@@ -1,8 +1,8 @@
 package com.grift.math.decoupler;
 
 import com.grift.forex.symbol.SymbolPair;
-import com.grift.math.ProbabilityVector;
 import com.grift.math.real.Real;
+import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 
 public interface DecouplerMatrix {

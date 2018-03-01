@@ -3,8 +3,8 @@ package com.grift.math.predictor;
 import java.util.stream.IntStream;
 import com.google.common.annotations.VisibleForTesting;
 import com.grift.forex.symbol.SymbolIndexMap;
-import com.grift.math.ProbabilityVector;
 import com.grift.math.real.Real;
+import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 

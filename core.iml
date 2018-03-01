@@ -111,5 +111,7 @@
     <orderEntry type="library" name="Maven: org.jetbrains:annotations-java5:15.0" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.efficient-java-matrix-library:ejml:0.25" level="project" />
     <orderEntry type="library" name="Maven: ch.obermuhlner:big-math:1.2.1" level="project" />
+    <orderEntry type="library" name="Maven: org.knowm.xchart:xchart:3.5.0" level="project" />
+    <orderEntry type="library" name="Maven: de.erichseifert.vectorgraphics2d:VectorGraphics2D:0.11" level="project" />
   </component>
 </module>
