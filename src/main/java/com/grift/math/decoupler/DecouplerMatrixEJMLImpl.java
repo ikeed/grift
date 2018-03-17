@@ -2,7 +2,9 @@ package com.grift.math.decoupler;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
+import com.google.common.collect.Sets;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.real.Real;
@@ -14,7 +16,7 @@ import org.ejml.interfaces.decomposition.EigenDecomposition;
 import org.jetbrains.annotations.NotNull;
 
 import static com.grift.math.real.Real.ZERO;
-import static lombok.Lombok.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.math.util.MathUtils.EPSILON;
 
 /**
@@ -113,6 +115,16 @@ public class DecouplerMatrixEJMLImpl implements DecouplerMatrix {
             return mostRecentValue.get(symbolPair);
         }
         return ZERO;
+    }
+
+    @Override
+    public boolean isReplete() {
+        Set<String> unique = Sets.newHashSet();
+        mostRecentValue.keySet().forEach(p -> {
+            unique.add(p.getFirst());
+            unique.add(p.getSecond());
+        });
+        return unique.size() == symbolIndexMap.size();
     }
 
     @NotNull

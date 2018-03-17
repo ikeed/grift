@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.grift.GriftApplication;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.real.Real;
@@ -14,18 +13,15 @@ import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import static com.google.common.collect.Sets.cartesianProduct;
+import static com.grift.math.real.Real.ONE;
 import static com.grift.math.real.Real.ZERO;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = {DecouplerMatrix.class})
-@ContextConfiguration(name = "fixture", classes = {GriftApplication.class})
+@SuppressWarnings("SpellCheckingInspection")
 public abstract class DecouplerMatrixTest {
 
     private static final int DIGITS_PRECISION = 13;
@@ -52,7 +48,9 @@ public abstract class DecouplerMatrixTest {
         allSymbols.forEach(sym1 -> {
             Real expected = trueValues.get(sym1);
             Real actual = result.get(sym1);
-            assertEquals("mismatch", expected.setDigitsPrecision(DIGITS_PRECISION), actual.setDigitsPrecision(DIGITS_PRECISION));
+            Real percentDifference = (ONE.subtract(expected.divide(actual))).abs().times(Real.valueOf(100d));
+            String msg = String.format("mismatch (%f%% difference)", percentDifference.toDouble());
+            assertEquals(msg, expected.setDigitsPrecision(DIGITS_PRECISION), actual.setDigitsPrecision(DIGITS_PRECISION));
         });
     }
 
@@ -90,6 +88,17 @@ public abstract class DecouplerMatrixTest {
         mat.put(symbolPair, Real.valueOf(1000));
 
         assertEquals("Should match", Real.valueOf(1000), mat.get(symbolPair));
+    }
+
+    @Test
+    public void isReplete() {
+        final List<String> allSymbols = symbolIndexMap.getAllSymbols();
+        String cur = allSymbols.remove(0);
+        final Map<String, Real> trueValues = createRandomValues(allSymbols);
+        final DecouplerMatrix mat = setInitialConditions(trueValues);
+        assertFalse(mat.isReplete());
+        mat.put(new SymbolPair(cur, allSymbols.get(0)), Real.valueOf(0.2));
+        assertTrue(mat.isReplete());
     }
 
     private int randomInt(int tooLarge) {

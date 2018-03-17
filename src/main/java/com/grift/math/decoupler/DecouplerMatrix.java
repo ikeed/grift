@@ -17,4 +17,5 @@ public interface DecouplerMatrix {
 
     Real get(@NotNull SymbolPair symbolPair);
 
+    boolean isReplete();
 }

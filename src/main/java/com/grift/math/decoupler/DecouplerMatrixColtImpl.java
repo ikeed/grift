@@ -2,11 +2,13 @@ package com.grift.math.decoupler;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import cern.colt.matrix.DoubleFactory2D;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.linalg.EigenvalueDecomposition;
+import com.google.common.collect.Sets;
 import com.grift.forex.symbol.SymbolIndexMap;
 import com.grift.forex.symbol.SymbolPair;
 import com.grift.math.real.Real;
@@ -14,7 +16,7 @@ import com.grift.math.stats.ProbabilityVector;
 import org.jetbrains.annotations.NotNull;
 
 import static com.grift.math.real.Real.ZERO;
-import static lombok.Lombok.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.math.util.MathUtils.EPSILON;
 
 /**
@@ -27,15 +29,11 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     private final SymbolIndexMap symbolIndexMap;
 
     @NotNull
-    private final ProbabilityVector.Factory vectorFactory;
-
-    @NotNull
     private final Map<SymbolPair, Real> mostRecentValue;
 
     private DecouplerMatrixColtImpl(@NotNull SymbolIndexMap symbolIndexMap) {
         this.symbolIndexMap = symbolIndexMap;
         this.mostRecentValue = new HashMap<>();
-        this.vectorFactory = new ProbabilityVector.Factory(symbolIndexMap.getImmutableCopy());
     }
 
     @NotNull
@@ -76,7 +74,7 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
     @Override
     public ProbabilityVector decouple() {
         DoubleMatrix1D solution = findSolutionVector();
-        return vectorFactory.create(solution.toArray());
+        return new ProbabilityVector.Factory(symbolIndexMap.getImmutableCopy()).create(solution.toArray());
     }
 
     @Override
@@ -104,6 +102,16 @@ public class DecouplerMatrixColtImpl implements DecouplerMatrix {
             return mostRecentValue.get(symbolPair);
         }
         return ZERO;
+    }
+
+    @Override
+    public boolean isReplete() {
+        Set<String> unique = Sets.newHashSet();
+        mostRecentValue.keySet().forEach(p -> {
+            unique.add(p.getFirst());
+            unique.add(p.getSecond());
+        });
+        return unique.size() == symbolIndexMap.size();
     }
 
     @NotNull
