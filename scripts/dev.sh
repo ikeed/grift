@@ -5,7 +5,7 @@ set -e
 HOME_DIR="$HOME"
 EMULATOR_DIR="$HOME_DIR/.grift/emulator"
 PUBSUB_PORT=8085
-FIRESTORE_PORT=8080
+FIRESTORE_PORT=8081
 
 # Function to check if a port is in use
 check_port() {
@@ -241,7 +241,7 @@ start_dev() {
     echo "Starting tick-fetcher-decoupler in development mode..."
 
     # Ensure emulators are running
-    if ! nc -z localhost 8085 2>/dev/null || ! nc -z localhost 8080 2>/dev/null; then
+    if ! nc -z localhost $PUBSUB_PORT 2>/dev/null || ! nc -z localhost $FIRESTORE_PORT 2>/dev/null; then
         echo "Error: Emulators are not running. Please run './scripts/dev.sh init' first"
         exit 1
     fi
@@ -251,7 +251,7 @@ start_dev() {
     # For Pub/Sub we can use env-init
     eval "$(gcloud beta emulators pubsub env-init)"
     # For Firestore we need to set it manually
-    export FIRESTORE_EMULATOR_HOST="localhost:8080"
+    export FIRESTORE_EMULATOR_HOST="localhost:$FIRESTORE_PORT"
 
     echo "Environment variables set:"
     echo "  PUBSUB_EMULATOR_HOST=$PUBSUB_EMULATOR_HOST"

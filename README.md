@@ -93,7 +93,7 @@ A distributed system for real-time currency strength modeling and forecasting.
 
 1. **Port conflicts**
    - Pub/Sub emulator uses port 8085
-   - Firestore emulator uses port 8080
+   - Firestore emulator uses port 8081
    - Debug port uses 5678
    - Run `./scripts/dev.sh clean` to free up ports
 

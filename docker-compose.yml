@@ -13,7 +13,7 @@ services:
       - ENVIRONMENT=development
       - DEBUG=true
       - PUBSUB_EMULATOR_HOST=host.docker.internal:8085
-      - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
+      - FIRESTORE_EMULATOR_HOST=host.docker.internal:8081
       - OANDA_ENVIRONMENT=practice
     ports:
       - "5678:5678"  # For debugpy
