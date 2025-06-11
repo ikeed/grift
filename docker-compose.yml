@@ -1,0 +1,28 @@
+services:
+  tick-fetcher-decoupler:
+    build:
+      context: .
+      dockerfile: services/tick-fetcher-decoupler/Dockerfile
+      target: development
+    volumes:
+      - .:/app
+      - ~/.config/gcloud:/root/.config/gcloud:ro  # For local GCP auth
+    environment:
+      - PYTHONPATH=/app
+      - GOOGLE_CLOUD_PROJECT=grift-forex
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - PUBSUB_EMULATOR_HOST=host.docker.internal:8085
+      - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
+      - OANDA_ENVIRONMENT=practice
+    ports:
+      - "5678:5678"  # For debugpy
+      - "8080:8080"  # For health checks
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:

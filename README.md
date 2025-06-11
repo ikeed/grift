@@ -1,46 +1,121 @@
-# GRIFT Cloud Pipeline
+# GRIFT (Generic Real-time Instrument Forecasting Technology)
 
-This repository contains the implementation of the GRIFT cloud pipeline, a system for processing financial data from OANDA FX Tick API.
+A distributed system for real-time currency strength modeling and forecasting.
 
-## Project Structure
-
-The project follows a modular structure with the following main components:
-
-- **tick-fetcher-decoupler**: A python service that fetches tick data from OANDA FX Tick API, decouples it, and publishes w-vectors to Pub/Sub.
-- **w-rollup-aggregator**: A Python Dataflow pipeline that reads raw w-vectors, windows them, computes elementwise averages, and writes to separate Pub/Sub topics.
-- **matrix_solver_fn**: A Python Dataflow pipeline that reads adjacent pairs of rollup vectors, invokes a solver, and publishes to Pub/Sub.
-- **matrix_blender**: A component that accumulates a sliding window of matrices and emits a blended result.
-
-## Getting Started
+## Local Development Setup
 
 ### Prerequisites
 
-- Python 3.13 or later
-- Google Cloud SDK
-- Access to OANDA FX Tick API
+1. **Java 17+**
+   ```bash
+   brew install openjdk@17
+   sudo ln -sfn $(brew --prefix)/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+   ```
 
-### Installation
+2. **Google Cloud SDK**
+   ```bash
+   brew install --cask google-cloud-sdk
+   ```
 
-1. Clone this repository
-2. Set up the required GCP resources (Pub/Sub topics, Firestore, Secret Manager)
-3. Deploy the components as described in the deployment instructions
+3. **Docker Desktop**
+   - Install from [Docker's website](https://www.docker.com/products/docker-desktop)
+   - Ensure it's running before starting development
 
-## Deployment
+### First-Time Setup
 
-Each component has its own deployment instructions:
+1. **Clone the repository**
+   ```bash
+   git clone [repository-url]
+   cd Grift
+   ```
 
-- **tick-fetcher-decoupler**: Deploy as a GKE container
-- **w-rollup-aggregator**: Deploy as a Dataflow job
-- **matrix_solver_fn**: Deploy as a Dataflow job or Cloud Function
-- **matrix_blender**: Deploy as a Dataflow job or GKE container
+2. **Set up Python environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r services/tick-fetcher-decoupler/requirements.txt
+   ```
 
-## Configuration
+3. **Initialize development environment**
+   ```bash
+   chmod +x scripts/dev.sh  # Make script executable
+   ./scripts/dev.sh init    # Sets up emulators and required infrastructure
+   ```
 
-The project uses Secret Manager for storing sensitive information like OANDA API tokens. Separate secrets are maintained for development and production environments.
+   This will:
+   - Install required Google Cloud components
+   - Start local Pub/Sub emulator
+   - Start local Firestore emulator
+   - Create necessary Pub/Sub topics
+   - Configure environment variables
 
-## Documentation
+### Development Workflow
 
-For more detailed information, refer to the following documents:
+1. **Start the service**
+   ```bash
+   ./scripts/dev.sh start
+   ```
+   This will:
+   - Verify emulators are running
+   - Build and start the service containers
+   - Enable hot-reloading for development
 
-- [Architecture](architecture.md): Detailed architecture plan for the GRIFT cloud pipeline
-- [Guidelines](guidelines.md): Guidelines for organizing the codebase, infrastructure, and CI/CD pipelines
+2. **Access development tools**
+   - Debug port: 5678 (attach with VS Code or PyCharm)
+   - Health check: http://localhost:8080/healthz
+   - Metrics: http://localhost:8080/metrics
+
+3. **Clean up resources**
+   ```bash
+   ./scripts/dev.sh clean
+   ```
+   This stops all containers and emulators.
+
+### Debugging
+
+- **View emulator logs**:
+  ```bash
+  tail -f /tmp/pubsub-emulator.log
+  tail -f /tmp/firestore-emulator.log
+  ```
+
+- **Container logs**: Available through Docker Desktop or:
+  ```bash
+  docker-compose logs -f tick-fetcher-decoupler
+  ```
+
+- **Debug with VS Code**:
+  1. Start the service with `./scripts/dev.sh start`
+  2. Attach debugger to port 5678
+  3. Set breakpoints and debug as normal
+
+### Common Issues
+
+1. **Port conflicts**
+   - Pub/Sub emulator uses port 8085
+   - Firestore emulator uses port 8080
+   - Debug port uses 5678
+   - Run `./scripts/dev.sh clean` to free up ports
+
+2. **Emulator not starting**
+   - Check Java installation: `java -version`
+   - Ensure ports are free: `lsof -i :8080` and `lsof -i :8085`
+   - Check logs in /tmp/
+
+### Project Structure
+
+- `cmd/` - Service entry points
+- `shared/` - Common libraries and utilities
+- `services/` - Individual service implementations
+- `infra/` - Infrastructure configurations
+- `scripts/` - Development and deployment tools
+
+## Architecture
+
+For detailed architecture information, see:
+- [Cloud Architecture](docs/grift_cloud_pipeline.md)
+- [Architecture Overview](architecture.md)
+
+## License
+
+[License details here]

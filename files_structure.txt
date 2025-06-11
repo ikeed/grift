@@ -1,0 +1,151 @@
+total 24
+-rw-r--r--  1 craig  staff     0 Jun 10 19:54 LICENSE
+-rw-r--r--  1 craig  staff  1897 Jun 10 23:37 README.md
+-rw-r--r--  1 craig  staff  5770 Jun 10 21:35 architecture.md
+drwxr-xr-x  2 craig  staff    64 Jun 10 19:54 charts/
+drwxr-xr-x  3 craig  staff    96 Jun 10 19:54 docs/
+drwxr-xr-x  3 craig  staff    96 Jun 10 19:53 functions/
+drwxr-xr-x  4 craig  staff   128 Jun 10 19:53 infra/
+drwxr-xr-x  5 craig  staff   160 Jun 10 19:53 pipelines/
+drwxr-xr-x  5 craig  staff   160 Jun 10 19:54 scripts/
+drwxr-xr-x  2 craig  staff    64 Jun 10 23:03 services/
+drwxr-xr-x  5 craig  staff   160 Jun 10 21:35 shared/
+drwxr-xr-x  6 craig  staff   192 Jun 10 19:54 tests/
+
+./charts:
+total 0
+
+./docs:
+total 0
+-rw-r--r--  1 craig  staff  0 Jun 10 19:54 grift_cloud_pipeline.md
+
+./functions:
+total 0
+drwxr-xr-x  4 craig  staff  128 Jun 10 20:01 matrix_solver_fn/
+
+./functions/matrix_solver_fn:
+total 16
+-rw-r--r--  1 craig  staff  3450 Jun 10 20:01 main.py
+-rw-r--r--  1 craig  staff    42 Jun 10 20:01 requirements.txt
+
+./infra:
+total 0
+drwxr-xr-x  4 craig  staff  128 Jun 10 19:53 k8s/
+drwxr-xr-x  6 craig  staff  192 Jun 10 19:55 terraform/
+
+./infra/k8s:
+total 0
+drwxr-xr-x  3 craig  staff   96 Jun 10 19:55 base/
+drwxr-xr-x  4 craig  staff  128 Jun 10 19:53 overlays/
+
+./infra/k8s/base:
+total 0
+-rw-r--r--  1 craig  staff  0 Jun 10 19:55 namespace.yaml
+
+./infra/k8s/overlays:
+total 0
+drwxr-xr-x  2 craig  staff  64 Jun 10 19:53 dev/
+drwxr-xr-x  2 craig  staff  64 Jun 10 19:53 prod/
+
+./infra/k8s/overlays/dev:
+total 0
+
+./infra/k8s/overlays/prod:
+total 0
+
+./infra/terraform:
+total 0
+drwxr-xr-x  4 craig  staff  128 Jun 10 19:55 environments/
+-rw-r--r--  1 craig  staff    0 Jun 10 19:55 main.tf
+-rw-r--r--  1 craig  staff    0 Jun 10 19:55 outputs.tf
+-rw-r--r--  1 craig  staff    0 Jun 10 19:55 variables.tf
+
+./infra/terraform/environments:
+total 0
+-rw-r--r--  1 craig  staff  0 Jun 10 19:55 dev.tfvars
+-rw-r--r--  1 craig  staff  0 Jun 10 19:55 prod.tfvars
+
+./pipelines:
+total 0
+drwxr-xr-x  3 craig  staff   96 Jun 10 20:06 common/
+drwxr-xr-x  5 craig  staff  160 Jun 10 20:06 matrix_solver/
+drwxr-xr-x  5 craig  staff  160 Jun 10 20:01 w_rollup_aggregator/
+
+./pipelines/common:
+total 8
+-rw-r--r--  1 craig  staff  4052 Jun 10 20:06 utils.py
+
+./pipelines/matrix_solver:
+total 32
+-rw-r--r--  1 craig  staff  4842 Jun 10 20:05 pipeline.py
+-rw-r--r--  1 craig  staff    39 Jun 10 20:06 requirements.txt
+-rw-r--r--  1 craig  staff   404 Jun 10 20:06 setup.py
+
+./pipelines/w_rollup_aggregator:
+total 24
+-rw-r--r--  1 craig  staff  3206 Jun 10 20:00 pipeline.py
+-rw-r--r--  1 craig  staff    39 Jun 10 20:01 requirements.txt
+-rw-r--r--  1 craig  staff   402 Jun 10 20:01 setup.py
+
+./scripts:
+total 0
+-rw-r--r--  1 craig  staff  0 Jun 10 19:54 deploy.sh
+-rw-r--r--  1 craig  staff  0 Jun 10 19:54 format.sh
+-rw-r--r--  1 craig  staff  0 Jun 10 19:54 lint.sh
+
+./services:
+total 0
+
+./shared:
+total 0
+-rw-r--r--  1 craig  staff    0 Jun 10 21:33 __init__.py
+drwxr-xr-x  4 craig  staff  128 Jun 11 02:28 decoupler/
+drwxr-xr-x  4 craig  staff  128 Jun 10 21:29 providers/
+
+./shared/decoupler:
+total 80
+-rw-r--r--  1 craig  staff     90 Jun 10 23:12 __init__.py
+-rw-r--r--  1 craig  staff  33498 Jun 11 02:28 decoupler.py
+
+./shared/providers:
+total 0
+-rw-r--r--  1 craig  staff    0 Jun 10 21:27 __init__.py
+drwxr-xr-x  6 craig  staff  192 Jun 11 02:25 oandav20/
+
+./shared/providers/oandav20:
+total 8
+-rw-r--r--  1 craig  staff  900 May 17 10:14 Auth.py
+-rw-r--r--  1 craig  staff    0 Jun 10 20:02 __init__.py
+drwxr-xr-x  4 craig  staff  128 Jun 10 23:12 rest/
+drwxr-xr-x  5 craig  staff  160 Jun 10 21:56 stream/
+
+./shared/providers/oandav20/rest:
+total 16
+-rw-r--r--  1 craig  staff   195 May 17 11:04 __init__.py
+-rw-r--r--  1 craig  staff  1159 Jun 10 23:12 instrument_service.py
+
+./shared/providers/oandav20/stream:
+total 24
+-rw-r--r--  1 craig  staff   230 May 17 11:04 __init__.py
+-rw-r--r--  1 craig  staff  3046 May 17 10:14 oandaitem.py
+-rw-r--r--  1 craig  staff  2128 Jun 10 21:56 pricing_stream.py
+
+./tests:
+total 0
+drwxr-xr-x  2 craig  staff  64 Jun 10 19:54 functions/
+drwxr-xr-x  2 craig  staff  64 Jun 10 19:54 infra/
+drwxr-xr-x  2 craig  staff  64 Jun 10 19:54 pipelines/
+drwxr-xr-x  2 craig  staff  64 Jun 10 19:54 services/
+
+./tests/functions:
+total 0
+
+./tests/infra:
+total 0
+
+./tests/pipelines:
+total 0
+
+./tests/services:
+total 0
+
