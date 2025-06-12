@@ -6,8 +6,8 @@
 #You can create an oanda account here: https://www.oanda.com/us-en/trading/accounts/practice-account/
 
 # Set your OANDA practice (fake money) account credentials here
-PRACTICE_ACCOUNT_ID="YOUR_PRACTICE_ACCOUNT_ID"
-PRACTICE_ACCESS_TOKEN="YOUR_PRACTICE_ACCESS_TOKEN"
+PRACTICE_ACCOUNT_ID="101-002-8067719-001"
+PRACTICE_ACCESS_TOKEN="b55398742bdf3e6e4cf0468aeeb0e75a-93476e298ffe5a83a1b6fd208bdbf4f5"
 
 # If you have a production (real money) account, uncomment the following lines and set the values
 #PRODUCTION_ACCOUNT_ID=""

@@ -4,7 +4,7 @@ This document provides a detailed plan for the GRIFT cloud pipeline architecture
 
 ---
 
-## 1. **tick-fetcher-decoupler**
+## 1. **tick_fetcher_decoupler**
 **Type**: GKE Deployment (long-running)
 
 ### Input:

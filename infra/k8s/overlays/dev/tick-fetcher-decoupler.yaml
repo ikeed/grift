@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tick-fetcher-decoupler
+  name: tick_fetcher_decoupler
   namespace: grift-dev
   labels:
-    app: tick-fetcher-decoupler
+    app: tick_fetcher_decoupler
     environment: development
 spec:
   replicas: 1  # Singleton deployment
   selector:
     matchLabels:
-      app: tick-fetcher-decoupler
+      app: tick_fetcher_decoupler
   template:
     metadata:
       labels:
-        app: tick-fetcher-decoupler
+        app: tick_fetcher_decoupler
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
@@ -22,8 +22,8 @@ spec:
     spec:
       serviceAccountName: tick-fetcher-sa
       containers:
-      - name: tick-fetcher-decoupler
-        image: gcr.io/grift-forex/tick-fetcher-decoupler:latest
+      - name: tick_fetcher_decoupler
+        image: gcr.io/grift-forex/tick_fetcher_decoupler:latest
         imagePullPolicy: Always
         env:
         - name: GOOGLE_CLOUD_PROJECT
@@ -60,17 +60,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: tick-fetcher-decoupler
+  name: tick_fetcher_decoupler
   namespace: grift-dev
   labels:
-    app: tick-fetcher-decoupler
+    app: tick_fetcher_decoupler
 spec:
   ports:
   - port: 8080
     targetPort: http
     name: http
   selector:
-    app: tick-fetcher-decoupler
+    app: tick_fetcher_decoupler
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -81,14 +81,14 @@ metadata:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: tick-fetcher-decoupler
+  name: tick_fetcher_decoupler
   namespace: grift-dev
   labels:
-    app: tick-fetcher-decoupler
+    app: tick_fetcher_decoupler
 spec:
   selector:
     matchLabels:
-      app: tick-fetcher-decoupler
+      app: tick_fetcher_decoupler
   endpoints:
   - port: http
     path: /metrics

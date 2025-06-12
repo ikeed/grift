@@ -1,28 +1,43 @@
 services:
-  tick-fetcher-decoupler:
+  tick_fetcher_decoupler:
     build:
       context: .
-      dockerfile: services/tick-fetcher-decoupler/Dockerfile
+      dockerfile: services/tick_fetcher_decoupler/Dockerfile
       target: development
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     volumes:
-      - .:/app
-      - ~/.config/gcloud:/root/.config/gcloud:ro  # For local GCP auth
+      - type: bind
+        source: .
+        target: /app
+        read_only: false
+      - type: bind
+        source: ${HOME}/.config/gcloud/application_default_credentials.json
+        target: /tmp/gcloud/credentials.json
+        read_only: true
     environment:
       - PYTHONPATH=/app
-      - GOOGLE_CLOUD_PROJECT=grift-forex
-      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
       - DEBUG=true
+      - DEBUG_WAIT=${DEBUG_WAIT:-false}
+      - PYTHONARGS=${PYTHONARGS:-}
+      - GOOGLE_CLOUD_PROJECT=grift-forex
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud/credentials.json
+      - ENVIRONMENT=practice
+      - OANDA_ENVIRONMENT=practice
       - PUBSUB_EMULATOR_HOST=host.docker.internal:8085
       - FIRESTORE_EMULATOR_HOST=host.docker.internal:8081
-      - OANDA_ENVIRONMENT=practice
     ports:
-      - "5678:5678"  # For debugpy
+      - "5680:5680"  # For debugpy
       - "8080:8080"  # For health checks
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
+
 
 volumes:
   redis_data:

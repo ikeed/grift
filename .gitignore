@@ -34,6 +34,7 @@ ENV/
 .env.oandapractice
 .env.oandaproduction
 .env.local
+scripts/seekrits.sh
 
 # Local development
 .env

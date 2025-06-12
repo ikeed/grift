@@ -1,6 +1,80 @@
 #!/bin/bash
 set -e
 
+# Function to start emulators
+start_emulators() {
+    echo "Starting emulators..."
+    # Start pubsub emulator in the background
+    gcloud beta emulators pubsub start --project=grift-forex --host-port=localhost:8085 &
+    PUBSUB_PID=$!
+
+    # Give the emulator time to start
+    sleep 5
+
+    # Set environment variables
+    $(gcloud beta emulators pubsub env-init)
+
+    # Save PID for cleanup
+    echo $PUBSUB_PID > /tmp/pubsub_emulator.pid
+}
+
+# Function to stop emulators
+stop_emulators() {
+    echo "Stopping emulators..."
+    if [ -f /tmp/pubsub_emulator.pid ]; then
+        kill $(cat /tmp/pubsub_emulator.pid) 2>/dev/null || true
+        rm /tmp/pubsub_emulator.pid
+    fi
+}
+
+# Check for gcloud and debug PATH if not found
+if ! command -v gcloud &> /dev/null; then
+    echo "Error: 'gcloud' command not found"
+    echo "Current PATH: $(echo $PATH)"
+    # Try to find gcloud in common locations
+    POSSIBLE_LOCATIONS=(
+        "/Users/Craig.Burnett/google-cloud-sdk/bin/gcloud"
+        "/usr/local/google-cloud-sdk/bin/gcloud"
+        "/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/bin/gcloud"
+    )
+
+    for loc in "${POSSIBLE_LOCATIONS[@]}"; do
+        echo "Checking for gcloud at: $loc"
+        if [ -f "$loc" ]; then
+            echo "Found gcloud at $loc"
+            export PATH="$(dirname "$loc"):$PATH"
+            echo "Updated PATH: $PATH"
+            if command -v gcloud &> /dev/null; then
+                echo "Successfully added gcloud to PATH"
+                break
+            fi
+        fi
+    done
+
+    # If we still can't find gcloud, exit with error
+    if ! command -v gcloud &> /dev/null; then
+        echo "Could not find gcloud in any standard location."
+        echo "Please check your Google Cloud SDK installation and ensure it's in your PATH"
+        exit 1
+    fi
+fi
+
+# Check if user is authenticated with gcloud
+if ! gcloud auth list --filter=status:ACTIVE --format="get(account)" 2>/dev/null | grep -q "@"; then
+    echo "Not authenticated with gcloud. Please login first..."
+    gcloud auth login
+    echo "Please run the script again after authentication."
+    exit 1
+fi
+
+# Check for application default credentials
+if [ ! -f "$HOME/.config/gcloud/application_default_credentials.json" ]; then
+    echo "Application default credentials not found. Setting them up..."
+    gcloud auth application-default login
+    echo "Please run the script again after setting up credentials."
+    exit 1
+fi
+
 # Get the user's home directory explicitly
 HOME_DIR="$HOME"
 EMULATOR_DIR="$HOME_DIR/.grift/emulator"
@@ -67,7 +141,7 @@ wait_for_emulator() {
     done
     echo " Timeout!"
     echo "Last few lines of $logfile:"
-    tail -n 5 "$logfile"
+    tail -n 15 "$logfile"
     return 1
 }
 
@@ -99,23 +173,39 @@ check_java() {
         echo "Error: Java 17 or higher is required (found version $java_version)"
         exit 1
     fi
+    echo "Java version $java_version found.  you're good to go!"
 }
 
 # Function to ensure required components are installed
 ensure_components() {
-    echo "Checking required components..."
+    echo "Updating Cloud SDK and components..."
 
-    # Install Firestore emulator if needed
-    if ! gcloud components list --quiet --filter='id:cloud-firestore-emulator' --format='get(state.name)' | grep -q "Installed"; then
-        echo "Installing Cloud Firestore emulator..."
-        gcloud components install cloud-firestore-emulator --quiet
-    fi
+    # First update the SDK itself
+    gcloud components update --quiet || {
+        echo "Failed to update Cloud SDK. Please run:"
+        echo "  gcloud components update"
+        echo "manually, or run gcloud init to ensure your SDK is properly configured."
+        exit 1
+    }
 
-    # Install beta components if needed
-    if ! gcloud components list --quiet --filter='id:beta' --format='get(state.name)' | grep -q "Installed"; then
-        echo "Installing beta components..."
-        gcloud components install beta --quiet
-    fi
+    # Update all required components
+    gcloud components update beta cloud-firestore-emulator pubsub-emulator --quiet || {
+        echo "Failed to update required components. Please try running:"
+        echo "  gcloud components update beta cloud-firestore-emulator pubsub-emulator"
+        echo "manually, or run gcloud init to ensure your SDK is properly configured."
+        exit 1
+    }
+
+    # Verify installations
+    for component in "beta" "cloud-firestore-emulator" "pubsub-emulator"; do
+        if ! gcloud components list --filter="id:$component" --format="get(state.name)" | grep -q "Installed"; then
+            echo "Error: Component $component is not properly installed."
+            echo "Please run: gcloud components install $component"
+            exit 1
+        fi
+    done
+
+    echo "All required components are up to date."
 }
 
 # Initialize local development environment
@@ -163,6 +253,7 @@ init_local_dev() {
         --data-dir="$PUBSUB_DIR" \
         --log-http \
         --verbosity=debug \
+        --quiet \
         > /tmp/pubsub-emulator.log 2>&1 &
 
     # Start Firestore emulator with --quiet flag
@@ -187,10 +278,19 @@ init_local_dev() {
 
     # Export emulator environment variables
     echo "Setting up environment variables..."
-    # First set up Pub/Sub environment
-    eval "$(gcloud beta emulators pubsub env-init)"
-    # Also set Firestore environment
+    # Set up Pub/Sub environment with explicit data directory
+    eval "$(CLOUDSDK_EMULATOR_PUBSUB_DATA_DIR=$PUBSUB_DIR gcloud beta emulators pubsub env-init --quiet)" || {
+        echo "Failed to initialize Pub/Sub environment. Setting manually..."
+        export PUBSUB_EMULATOR_HOST="localhost:$PUBSUB_PORT"
+    }
+    # Set Firestore environment
     export FIRESTORE_EMULATOR_HOST="localhost:$FIRESTORE_PORT"
+
+    # Verify environment variables are set
+    if [ -z "$PUBSUB_EMULATOR_HOST" ]; then
+        echo "Warning: PUBSUB_EMULATOR_HOST not set, using default"
+        export PUBSUB_EMULATOR_HOST="localhost:$PUBSUB_PORT"
+    fi
 
     echo "Setting up Pub/Sub topics..."
     topics=(
@@ -253,18 +353,27 @@ start_dev() {
     # For Firestore we need to set it manually
     export FIRESTORE_EMULATOR_HOST="localhost:$FIRESTORE_PORT"
 
+    # Read and export application default credentials content
+    if [ -f "$HOME/.config/gcloud/application_default_credentials.json" ]; then
+        export GOOGLE_APPLICATION_CREDENTIALS_JSON="$(cat "$HOME"/.config/gcloud/application_default_credentials.json)"
+    else
+        echo "Error: Application default credentials not found. Please run 'gcloud auth application-default login' first."
+        exit 1
+    fi
+
     echo "Environment variables set:"
     echo "  PUBSUB_EMULATOR_HOST=$PUBSUB_EMULATOR_HOST"
     echo "  FIRESTORE_EMULATOR_HOST=$FIRESTORE_EMULATOR_HOST"
+    echo "  Application credentials loaded ✓"
 
-    # Build and start the services
-    docker-compose up --build
+    # Build and start the services with Python frozen modules disabled
+    PYTHONARGS="-Xfrozen_modules=off" docker-compose up --build
 }
 
 # Run tests
 run_tests() {
     echo "Running tests..."
-    python -m pytest tests/services/tick-fetcher-decoupler
+    python -m pytest tests/services/tick_fetcher_decoupler
 }
 
 # Clean up development environment

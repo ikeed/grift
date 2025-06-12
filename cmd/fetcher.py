@@ -1,18 +1,39 @@
 import asyncio
 import json
 import math
+import sys
 from datetime import datetime, UTC
 from typing import Dict, List, TypedDict, Any, cast
+from pathlib import Path
+import importlib.util
 
-from google.cloud import firestore, pubsub_v1
-from mpmath import mp
+# Add project root to Python path
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+try:
+    from google.cloud import firestore, pubsub_v1
+except ImportError:
+    # Handle import error or use mock classes for development
+    from unittest.mock import MagicMock
+    firestore = MagicMock()
+    pubsub_v1 = MagicMock()
+
 from aiohttp import web
+from mpmath import mp
 
+# Import health module using a modified path that works with the hyphenated directory
+health_module_path = str(Path(project_root) / 'services/tick_fetcher_decoupler/health.py')
+health_spec = importlib.util.spec_from_file_location('health', health_module_path)
+health = importlib.util.module_from_spec(health_spec)
+health_spec.loader.exec_module(health)
+
+# Local imports
 from grift.config import settings
 from grift.logger import StructuredLogger
 from shared.decoupler.decoupler import ContinuousDecoupleService
 from shared.providers.oandav20.stream.pricing_stream import OandaPricingService
-from services.tick-fetcher-decoupler.health import HealthServer
 
 logger = StructuredLogger(__name__)
 
@@ -52,7 +73,7 @@ class TickFetcherDecoupler:
         )
 
         # Initialize health server
-        self.health_server = HealthServer(port=8080)
+        self.health_server = health.HealthServer(port=8080)
 
         self.tick_batch: List[TickData] = []
         self.last_checkpoint: Dict[str, CheckpointData] = {}

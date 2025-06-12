@@ -33,7 +33,7 @@ A distributed system for real-time currency strength modeling and forecasting.
    ```bash
    python -m venv .venv
    source .venv/bin/activate
-   pip install -r services/tick-fetcher-decoupler/requirements.txt
+   pip install -r services/tick_fetcher_decoupler/requirements.txt
    ```
 
 3. **Initialize development environment**
@@ -81,7 +81,7 @@ A distributed system for real-time currency strength modeling and forecasting.
 
 - **Container logs**: Available through Docker Desktop or:
   ```bash
-  docker-compose logs -f tick-fetcher-decoupler
+  docker-compose logs -f tick_fetcher_decoupler
   ```
 
 - **Debug with VS Code**:
